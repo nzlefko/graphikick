@@ -1,7 +1,8 @@
 import { useState } from "react";
 import QueryInput from "@/components/QueryInput";
 import ResultsDisplay from "@/components/ResultsDisplay";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { parseQuery, getFootballData } from "@/services/footballData";
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,28 +15,25 @@ const Index = () => {
     setError(null);
     
     try {
-      // For now, we'll simulate an API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const queryParams = parseQuery(query);
+      const results = await getFootballData(queryParams);
       
-      // Sample response
-      setData([
-        { name: 'הלנד', goals: 20 },
-        { name: 'קיין', goals: 18 },
-        { name: 'סלאח', goals: 15 },
-        { name: 'סון', goals: 13 },
-        { name: 'ווטקינס', goals: 12 },
-      ]);
-      
-      toast({
-        title: "השאילתה בוצעה בהצלחה",
-        description: "מציג תוצאות עבור: " + query,
-      });
+      if (Array.isArray(results)) {
+        setData(results);
+        toast({
+          title: "השאילתה בוצעה בהצלחה",
+          description: "מציג תוצאות עבור: " + query,
+        });
+      } else {
+        throw new Error("תוצאות לא תקינות");
+      }
     } catch (err) {
-      setError("השאילתה נכשלה. אנא נסה שוב.");
+      const errorMessage = err instanceof Error ? err.message : "השאילתה נכשלה. אנא נסה שוב.";
+      setError(errorMessage);
       toast({
         variant: "destructive",
         title: "שגיאה",
-        description: "השאילתה נכשלה. אנא נסה שוב.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
