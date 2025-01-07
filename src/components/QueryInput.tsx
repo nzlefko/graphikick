@@ -19,17 +19,17 @@ const QueryInput = ({ onSubmit, isLoading }: QueryInputProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-3xl mx-auto">
+    <form onSubmit={handleSubmit} className="w-full max-w-3xl mx-auto" dir="auto">
       <div className="flex gap-2">
         <Input
-          placeholder="Ask about football statistics (e.g. 'Show me top scorers in Premier League 2023')"
+          placeholder="שאל על סטטיסטיקות כדורגל (לדוגמה: 'הראה לי את מלך השערים בליגה האנגלית 2023')"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1"
+          className="flex-1 text-right"
         />
         <Button type="submit" disabled={isLoading}>
           <Search className="w-4 h-4 mr-2" />
-          Query
+          חיפוש
         </Button>
       </div>
     </form>

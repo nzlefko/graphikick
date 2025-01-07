@@ -18,21 +18,12 @@ const ResultsDisplay = ({ data, error }: ResultsDisplayProps) => {
     return null;
   }
 
-  // For this example, we'll use sample data
-  const sampleData = [
-    { name: 'Haaland', goals: 20 },
-    { name: 'Kane', goals: 18 },
-    { name: 'Salah', goals: 15 },
-    { name: 'Son', goals: 13 },
-    { name: 'Watkins', goals: 12 },
-  ];
-
   return (
     <div className="w-full bg-white p-6 rounded-lg shadow-sm animate-fade-in">
-      <h3 className="text-lg font-semibold mb-4">Results Visualization</h3>
+      <h3 className="text-lg font-semibold mb-4">ויזואליזציית תוצאות</h3>
       <div className="w-full h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={sampleData}>
+          <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis />

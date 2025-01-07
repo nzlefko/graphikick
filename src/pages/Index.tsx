@@ -19,23 +19,23 @@ const Index = () => {
       
       // Sample response
       setData([
-        { name: 'Haaland', goals: 20 },
-        { name: 'Kane', goals: 18 },
-        { name: 'Salah', goals: 15 },
-        { name: 'Son', goals: 13 },
-        { name: 'Watkins', goals: 12 },
+        { name: 'הלנד', goals: 20 },
+        { name: 'קיין', goals: 18 },
+        { name: 'סלאח', goals: 15 },
+        { name: 'סון', goals: 13 },
+        { name: 'ווטקינס', goals: 12 },
       ]);
       
       toast({
-        title: "Query processed successfully",
-        description: "Displaying results for: " + query,
+        title: "השאילתה בוצעה בהצלחה",
+        description: "מציג תוצאות עבור: " + query,
       });
     } catch (err) {
-      setError("Failed to process query. Please try again.");
+      setError("השאילתה נכשלה. אנא נסה שוב.");
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to process your query. Please try again.",
+        title: "שגיאה",
+        description: "השאילתה נכשלה. אנא נסה שוב.",
       });
     } finally {
       setIsLoading(false);
@@ -43,12 +43,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-12 px-4" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-secondary">Football Stats Explorer</h1>
+          <h1 className="text-4xl font-bold text-secondary">מחקר סטטיסטיקות כדורגל</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Ask questions about football statistics in natural language and see the results visualized
+            שאל שאלות על סטטיסטיקות כדורגל בשפה טבעית וצפה בתוצאות מוויזואליות
           </p>
         </div>
 
@@ -56,7 +56,7 @@ const Index = () => {
 
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-pulse text-primary">Loading results...</div>
+            <div className="animate-pulse text-primary">טוען תוצאות...</div>
           </div>
         ) : (
           <ResultsDisplay data={data} error={error} />
