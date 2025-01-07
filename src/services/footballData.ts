@@ -1,32 +1,35 @@
 import { League, Player, Team } from '@/types/football';
 
-// This is sample data - we'll replace it with actual OpenFootball data
-export const sampleLeague: League = {
-  name: "Premier League",
-  season: "2023/24",
-  teams: [
-    {
-      name: "Manchester City",
-      points: 63,
-      played: 27,
-      won: 19,
-      drawn: 6,
-      lost: 2,
-      goalsFor: 63,
-      goalsAgainst: 26
-    },
-    {
-      name: "Liverpool",
-      points: 60,
-      played: 27,
-      won: 18,
-      drawn: 6,
-      lost: 3,
-      goalsFor: 63,
-      goalsAgainst: 25
+const FOOTBALL_DATA_BASE_URL = 'https://raw.githubusercontent.com/openfootball/football.json/master/2023-24';
+
+export const fetchLeagueData = async (leaguePath: string): Promise<League> => {
+  try {
+    const response = await fetch(`${FOOTBALL_DATA_BASE_URL}/${leaguePath}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch league data');
     }
-  ],
-  topScorers: [
+    const data = await response.json();
+    return transformLeagueData(data);
+  } catch (error) {
+    console.error('Error fetching league data:', error);
+    throw new Error('Failed to load league data');
+  }
+};
+
+const transformLeagueData = (rawData: any): League => {
+  const teams: Team[] = rawData.standings[0].map((standing: any) => ({
+    name: standing.team.name,
+    points: standing.points,
+    played: standing.played,
+    won: standing.won,
+    drawn: standing.drawn,
+    lost: standing.lost,
+    goalsFor: standing.goals_for,
+    goalsAgainst: standing.goals_against
+  }));
+
+  // Note: OpenFootball doesn't provide top scorers data, so we'll keep using sample data for now
+  const topScorers: Player[] = [
     {
       name: "Erling Haaland",
       goals: 17,
@@ -39,7 +42,14 @@ export const sampleLeague: League = {
       team: "Aston Villa",
       position: "Forward"
     }
-  ]
+  ];
+
+  return {
+    name: "Premier League",
+    season: "2023/24",
+    teams,
+    topScorers
+  };
 };
 
 export const parseQuery = (query: string): { type: string; league?: string; season?: string } => {
@@ -57,14 +67,19 @@ export const parseQuery = (query: string): { type: string; league?: string; seas
 };
 
 export const getFootballData = async (queryParams: { type: string; league?: string; season?: string }) => {
-  // In the future, this will fetch from the actual OpenFootball dataset
-  // For now, we'll return sample data
-  switch (queryParams.type) {
-    case "topScorers":
-      return sampleLeague.topScorers;
-    case "standings":
-      return sampleLeague.teams;
-    default:
-      throw new Error("לא הצלחתי להבין את השאילתה. אנא נסה שוב.");
+  try {
+    const leagueData = await fetchLeagueData('en.1.json');
+    
+    switch (queryParams.type) {
+      case "topScorers":
+        return leagueData.topScorers;
+      case "standings":
+        return leagueData.teams;
+      default:
+        throw new Error("לא הצלחתי להבין את השאילתה. אנא נסה שוב.");
+    }
+  } catch (error) {
+    console.error('Error in getFootballData:', error);
+    throw error;
   }
 };
