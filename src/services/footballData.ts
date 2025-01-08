@@ -53,8 +53,8 @@ const transformLeagueData = (rawData: any): League => {
       });
     }
 
-    // Only process completed matches
-    if (score1 !== null && score2 !== null) {
+    // Only process completed matches where both scores are numbers
+    if (typeof score1 === 'number' && typeof score2 === 'number') {
       const team1Data = teamsMap.get(team1)!;
       const team2Data = teamsMap.get(team2)!;
 
@@ -62,6 +62,7 @@ const transformLeagueData = (rawData: any): League => {
       team1Data.played += 1;
       team2Data.played += 1;
       
+      // Update goals
       team1Data.goalsFor += score1;
       team1Data.goalsAgainst += score2;
       team2Data.goalsFor += score2;
