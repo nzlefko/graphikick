@@ -3,9 +3,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 interface ResultsDisplayProps {
   data: any[] | null;
   error: string | null;
+  language: 'he' | 'en';
 }
 
-const ResultsDisplay = ({ data, error }: ResultsDisplayProps) => {
+const ResultsDisplay = ({ data, error, language }: ResultsDisplayProps) => {
   if (error) {
     return (
       <div className="p-4 bg-red-50 text-red-500 rounded-lg animate-fade-in">
@@ -20,7 +21,9 @@ const ResultsDisplay = ({ data, error }: ResultsDisplayProps) => {
 
   return (
     <div className="w-full bg-white p-6 rounded-lg shadow-sm animate-fade-in">
-      <h3 className="text-lg font-semibold mb-4">ויזואליזציית תוצאות</h3>
+      <h3 className="text-lg font-semibold mb-4">
+        {language === 'he' ? "ויזואליזציית תוצאות" : "Results Visualization"}
+      </h3>
       <div className="w-full h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
