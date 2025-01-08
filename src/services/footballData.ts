@@ -117,11 +117,19 @@ const transformLeagueData = (rawData: any): League => {
 export const parseQuery = (query: string): { type: string; league?: string; season?: string } => {
   const lowercaseQuery = query.toLowerCase();
   
-  if (lowercaseQuery.includes("מלך שערים") || lowercaseQuery.includes("כובש")) {
+  // Check for top scorers queries in both languages
+  if (lowercaseQuery.includes("מלך שערים") || 
+      lowercaseQuery.includes("כובש") || 
+      lowercaseQuery.includes("top scorer") || 
+      lowercaseQuery.includes("scorer")) {
     return { type: "topScorers", league: "Premier League" };
   }
   
-  if (lowercaseQuery.includes("טבלה") || lowercaseQuery.includes("דירוג")) {
+  // Check for standings queries in both languages
+  if (lowercaseQuery.includes("טבלה") || 
+      lowercaseQuery.includes("דירוג") || 
+      lowercaseQuery.includes("standing") || 
+      lowercaseQuery.includes("table")) {
     return { type: "standings", league: "Premier League" };
   }
   
