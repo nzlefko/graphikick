@@ -137,24 +137,41 @@ export const parseQuery = (query: string): { type: string; league?: string; seas
       throw new Error('Invalid season format. Please use format YYYY-YY where YY is the next year (e.g., 2016-17)');
     }
   }
-  
-  // Check for top scorers queries in both languages
-  if (lowercaseQuery.includes("מלך שערים") || 
-      lowercaseQuery.includes("כובש") || 
-      lowercaseQuery.includes("top scorer") || 
-      lowercaseQuery.includes("scorer")) {
-    return { type: "topScorers", league: "Premier League", season };
-  }
-  
-  // Check for standings queries in both languages
-  if (lowercaseQuery.includes("טבלה") || 
-      lowercaseQuery.includes("דירוג") || 
-      lowercaseQuery.includes("standing") || 
-      lowercaseQuery.includes("table")) {
+
+  // Hebrew keywords for standings
+  const hebrewStandingsKeywords = [
+    'טבלה',
+    'דירוג',
+    'טבלת ליגה',
+    'מיקום',
+    'דירוג קבוצות'
+  ];
+
+  // Hebrew keywords for top scorers
+  const hebrewScorerKeywords = [
+    'מלך שערים',
+    'מלך השערים',
+    'כובש',
+    'מבקיע',
+    'שערים',
+    'מבקיעים'
+  ];
+
+  // Check for standings queries
+  if (hebrewStandingsKeywords.some(keyword => lowercaseQuery.includes(keyword)) || 
+      lowercaseQuery.includes('standing') || 
+      lowercaseQuery.includes('table')) {
     return { type: "standings", league: "Premier League", season };
   }
   
-  return { type: "unknown" };
+  // Check for top scorers queries
+  if (hebrewScorerKeywords.some(keyword => lowercaseQuery.includes(keyword)) || 
+      lowercaseQuery.includes('top scorer') || 
+      lowercaseQuery.includes('scorer')) {
+    return { type: "topScorers", league: "Premier League", season };
+  }
+  
+  throw new Error("לא הצלחתי להבין את השאילתה. אנא נסה שוב עם 'טבלה' או 'מלך שערים'");
 };
 
 export const getFootballData = async (queryParams: { type: string; league?: string; season?: string }) => {
