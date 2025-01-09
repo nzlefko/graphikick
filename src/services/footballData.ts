@@ -8,7 +8,7 @@ const getApiToken = () => {
   return token;
 };
 
-const FOOTBALL_API_BASE_URL = 'https://api.football-data.org/v4';
+const FOOTBALL_API_BASE_URL = 'https://corsproxy.io/?https://api.football-data.org/v4';
 
 interface FootballResponse {
   data: any;

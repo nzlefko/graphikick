@@ -1,6 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Team, TeamStanding, TopScorer, Match, Competition } from '@/types/football';
 
 interface ResultsDisplayProps {
   data: any[] | null;
@@ -30,12 +31,12 @@ const ResultsDisplay = ({ data, error, language }: ResultsDisplayProps) => {
     if ('goals' in firstItem && 'player' in firstItem) return 'scorers';
     if ('homeTeam' in firstItem && 'awayTeam' in firstItem) return 'matches';
     if ('name' in firstItem && 'area' in firstItem) return 'competitions';
-    if ('squad' in firstItem) return 'team';
+    if ('squad' in firstItem || ('venue' in firstItem && 'clubColors' in firstItem)) return 'team';
     
     return 'unknown';
   };
 
-  const dataType = getDataType(data);
+  const dataType = Array.isArray(data) ? getDataType(data) : 'team';
 
   switch (dataType) {
     case 'standings':
@@ -59,7 +60,7 @@ const ResultsDisplay = ({ data, error, language }: ResultsDisplayProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((team) => (
+              {(data as TeamStanding[]).map((team) => (
                 <TableRow key={team.team.id}>
                   <TableCell className="font-medium">{team.position}</TableCell>
                   <TableCell>{team.team.name}</TableCell>
@@ -85,7 +86,7 @@ const ResultsDisplay = ({ data, error, language }: ResultsDisplayProps) => {
           </h3>
           <div className="w-full h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.map(scorer => ({
+              <LineChart data={(data as TopScorer[]).map(scorer => ({
                 name: scorer.player.name,
                 goals: scorer.goals
               }))}>
@@ -103,7 +104,7 @@ const ResultsDisplay = ({ data, error, language }: ResultsDisplayProps) => {
     case 'matches':
       return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {data.map((match) => (
+          {(data as Match[]).map((match) => (
             <Card key={match.id}>
               <CardHeader>
                 <CardTitle className="text-sm">
@@ -130,7 +131,7 @@ const ResultsDisplay = ({ data, error, language }: ResultsDisplayProps) => {
     case 'competitions':
       return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {data.map((competition) => (
+          {(data as Competition[]).map((competition) => (
             <Card key={competition.id}>
               <CardHeader>
                 <CardTitle>{competition.name}</CardTitle>
@@ -144,23 +145,24 @@ const ResultsDisplay = ({ data, error, language }: ResultsDisplayProps) => {
       );
 
     case 'team':
+      const teamData = Array.isArray(data) ? data[0] : data as Team;
       return (
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{data.name}</CardTitle>
+              <CardTitle>{teamData.name}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <p><strong>{language === 'he' ? "אצטדיון:" : "Stadium:"}</strong> {data.venue}</p>
-                <p><strong>{language === 'he' ? "צבעים:" : "Colors:"}</strong> {data.clubColors}</p>
-                <p><strong>{language === 'he' ? "שנת ייסוד:" : "Founded:"}</strong> {data.founded}</p>
+                <p><strong>{language === 'he' ? "אצטדיון:" : "Stadium:"}</strong> {teamData.venue}</p>
+                <p><strong>{language === 'he' ? "צבעים:" : "Colors:"}</strong> {teamData.clubColors}</p>
+                <p><strong>{language === 'he' ? "שנת ייסוד:" : "Founded:"}</strong> {teamData.founded}</p>
               </div>
             </CardContent>
           </Card>
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {data.squad?.map((player: any) => (
+            {teamData.squad?.map((player) => (
               <Card key={player.id}>
                 <CardHeader>
                   <CardTitle className="text-sm">{player.name}</CardTitle>
