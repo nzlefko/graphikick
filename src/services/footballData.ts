@@ -1,5 +1,13 @@
 // API configuration
-const FOOTBALL_API_KEY = 'YOUR_API_KEY'; // Note: In production, this should be in an environment variable
+const getApiToken = () => {
+  const token = localStorage.getItem('FOOTBALL_API_TOKEN');
+  if (!token) {
+    localStorage.setItem('FOOTBALL_API_TOKEN', 'e61650fe00fc47379949a684d4744ccb');
+    return 'e61650fe00fc47379949a684d4744ccb';
+  }
+  return token;
+};
+
 const FOOTBALL_API_BASE_URL = 'https://api.football-data.org/v4';
 
 interface FootballResponse {
@@ -12,7 +20,7 @@ const fetchFootballData = async (endpoint: string): Promise<FootballResponse> =>
   try {
     const response = await fetch(`${FOOTBALL_API_BASE_URL}${endpoint}`, {
       headers: {
-        'X-Auth-Token': FOOTBALL_API_KEY
+        'X-Auth-Token': getApiToken()
       }
     });
     
