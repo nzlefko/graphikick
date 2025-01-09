@@ -1,190 +1,142 @@
-import { League, Player, Team } from '@/types/football';
+// API configuration
+const FOOTBALL_API_KEY = 'YOUR_API_KEY'; // Note: In production, this should be in an environment variable
+const FOOTBALL_API_BASE_URL = 'https://api.football-data.org/v4';
 
-const FOOTBALL_DATA_BASE_URL = 'https://raw.githubusercontent.com/openfootball/football.json/master';
+interface FootballResponse {
+  data: any;
+  error?: string;
+}
 
-export const fetchLeagueData = async (leaguePath: string, season?: string): Promise<League> => {
+// Fetch data from Football-Data.org API
+const fetchFootballData = async (endpoint: string): Promise<FootballResponse> => {
   try {
-    // Default to current season if none specified
-    const seasonPath = season || '2023-24';
-    const response = await fetch(`${FOOTBALL_DATA_BASE_URL}/${seasonPath}/${leaguePath}`);
+    const response = await fetch(`${FOOTBALL_API_BASE_URL}${endpoint}`, {
+      headers: {
+        'X-Auth-Token': FOOTBALL_API_KEY
+      }
+    });
+    
     if (!response.ok) {
-      throw new Error(`Failed to fetch league data for season ${seasonPath}`);
+      throw new Error(`API Error: ${response.status}`);
     }
+    
     const data = await response.json();
-    return transformLeagueData(data, seasonPath);
+    return { data };
   } catch (error) {
-    console.error('Error fetching league data:', error);
-    throw new Error(`Failed to load league data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('Error fetching football data:', error);
+    return { 
+      data: null, 
+      error: error instanceof Error ? error.message : 'Failed to fetch data' 
+    };
   }
 };
 
-const transformLeagueData = (rawData: any, season: string): League => {
-  const teams: Team[] = [];
-  const teamsMap = new Map<string, Team>();
-
-  // Initialize teams from the matches data
-  rawData.matches.forEach((match: any) => {
-    const { team1, team2, score } = match;
-    
-    // Add team1 if not exists
-    if (!teamsMap.has(team1)) {
-      teamsMap.set(team1, {
-        name: team1,
-        points: 0,
-        played: 0,
-        won: 0,
-        drawn: 0,
-        lost: 0,
-        goalsFor: 0,
-        goalsAgainst: 0
-      });
-    }
-    
-    // Add team2 if not exists
-    if (!teamsMap.has(team2)) {
-      teamsMap.set(team2, {
-        name: team2,
-        points: 0,
-        played: 0,
-        won: 0,
-        drawn: 0,
-        lost: 0,
-        goalsFor: 0,
-        goalsAgainst: 0
-      });
-    }
-
-    // Only process completed matches where both scores exist in the score object
-    if (score && typeof score.ft?.[0] === 'number' && typeof score.ft?.[1] === 'number') {
-      const score1 = score.ft[0];
-      const score2 = score.ft[1];
-      
-      const team1Data = teamsMap.get(team1)!;
-      const team2Data = teamsMap.get(team2)!;
-
-      // Update statistics for both teams
-      team1Data.played += 1;
-      team2Data.played += 1;
-      
-      // Update goals
-      team1Data.goalsFor += score1;
-      team1Data.goalsAgainst += score2;
-      team2Data.goalsFor += score2;
-      team2Data.goalsAgainst += score1;
-
-      if (score1 > score2) {
-        team1Data.won += 1;
-        team2Data.lost += 1;
-        team1Data.points += 3;
-      } else if (score2 > score1) {
-        team2Data.won += 1;
-        team1Data.lost += 1;
-        team2Data.points += 3;
-      } else {
-        team1Data.drawn += 1;
-        team2Data.drawn += 1;
-        team1Data.points += 1;
-        team2Data.points += 1;
-      }
-    }
-  });
-
-  // Convert Map to array and sort by points
-  const sortedTeams = Array.from(teamsMap.values()).sort((a, b) => 
-    b.points - a.points || 
-    (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst)
-  );
-
-  // Note: OpenFootball doesn't provide top scorers data, so we'll keep using sample data for now
-  const topScorers: Player[] = [
-    {
-      name: "Erling Haaland",
-      goals: 17,
-      team: "Manchester City",
-      position: "Forward"
-    },
-    {
-      name: "Ollie Watkins",
-      goals: 13,
-      team: "Aston Villa",
-      position: "Forward"
-    }
-  ];
-
-  return {
-    name: "Premier League",
-    season,
-    teams: sortedTeams,
-    topScorers
-  };
-};
-
-export const parseQuery = (query: string): { type: string; league?: string; season?: string } => {
+export const parseQuery = (query: string): { 
+  type: string; 
+  league?: string; 
+  season?: string;
+  team?: string;
+} => {
   const lowercaseQuery = query.toLowerCase();
   
-  // Extract and validate season format (YYYY-YY)
+  // Extract season (YYYY-YY format)
   const seasonMatch = query.match(/\d{4}-\d{2}/);
   let season = undefined;
   
   if (seasonMatch) {
     const fullYear = parseInt(seasonMatch[0].slice(0, 4));
     const shortYear = parseInt(seasonMatch[0].slice(5, 7));
-    
-    // Validate that the short year is the next year after the full year
     if (shortYear === (fullYear + 1) % 100) {
       season = seasonMatch[0];
-    } else {
-      throw new Error('Invalid season format. Please use format YYYY-YY where YY is the next year (e.g., 2016-17)');
     }
   }
 
-  // Hebrew keywords for standings
-  const hebrewStandingsKeywords = [
-    'טבלה',
-    'דירוג',
-    'טבלת ליגה',
-    'מיקום',
-    'דירוג קבוצות'
-  ];
+  // Hebrew keywords
+  const hebrewStandingsKeywords = ['טבלה', 'דירוג', 'טבלת ליגה', 'מיקום', 'דירוג קבוצות'];
+  const hebrewScorerKeywords = ['מלך שערים', 'מלך השערים', 'כובש', 'מבקיע', 'שערים', 'מבקיעים'];
+  const hebrewMatchesKeywords = ['משחקים', 'תוצאות', 'מחזור'];
+  const hebrewTeamKeywords = ['קבוצה', 'שחקנים', 'סגל'];
+  const hebrewCompetitionsKeywords = ['ליגות', 'תחרויות', 'טורנירים'];
 
-  // Hebrew keywords for top scorers
-  const hebrewScorerKeywords = [
-    'מלך שערים',
-    'מלך השערים',
-    'כובש',
-    'מבקיע',
-    'שערים',
-    'מבקיעים'
-  ];
+  // English keywords
+  const matchesKeywords = ['matches', 'fixtures', 'results', 'games'];
+  const teamKeywords = ['team', 'squad', 'players'];
+  const competitionsKeywords = ['competitions', 'leagues', 'tournaments'];
 
-  // Check for standings queries
-  if (hebrewStandingsKeywords.some(keyword => lowercaseQuery.includes(keyword)) || 
+  // Check query type
+  if (hebrewStandingsKeywords.some(kw => lowercaseQuery.includes(kw)) || 
       lowercaseQuery.includes('standing') || 
       lowercaseQuery.includes('table')) {
-    return { type: "standings", league: "Premier League", season };
+    return { type: "standings", league: "PL", season };
   }
   
-  // Check for top scorers queries
-  if (hebrewScorerKeywords.some(keyword => lowercaseQuery.includes(keyword)) || 
-      lowercaseQuery.includes('top scorer') || 
+  if (hebrewScorerKeywords.some(kw => lowercaseQuery.includes(kw)) || 
       lowercaseQuery.includes('scorer')) {
-    return { type: "topScorers", league: "Premier League", season };
+    return { type: "scorers", league: "PL", season };
   }
   
-  throw new Error("לא הצלחתי להבין את השאילתה. אנא נסה שוב עם 'טבלה' או 'מלך שערים'");
+  if (hebrewMatchesKeywords.some(kw => lowercaseQuery.includes(kw)) || 
+      matchesKeywords.some(kw => lowercaseQuery.includes(kw))) {
+    return { type: "matches", league: "PL", season };
+  }
+  
+  if (hebrewTeamKeywords.some(kw => lowercaseQuery.includes(kw)) || 
+      teamKeywords.some(kw => lowercaseQuery.includes(kw))) {
+    return { type: "team", league: "PL", season };
+  }
+  
+  if (hebrewCompetitionsKeywords.some(kw => lowercaseQuery.includes(kw)) || 
+      competitionsKeywords.some(kw => lowercaseQuery.includes(kw))) {
+    return { type: "competitions" };
+  }
+  
+  throw new Error(
+    language === 'he' 
+      ? "לא הצלחתי להבין את השאילתה. נסה לשאול על טבלה, מלך שערים, משחקים, קבוצות או תחרויות"
+      : "Could not understand the query. Try asking about standings, top scorers, matches, teams, or competitions"
+  );
 };
 
-export const getFootballData = async (queryParams: { type: string; league?: string; season?: string }) => {
+export const getFootballData = async (queryParams: { 
+  type: string; 
+  league?: string; 
+  season?: string;
+  team?: string;
+}) => {
   try {
-    const leagueData = await fetchLeagueData('en.1.json', queryParams.season);
-    
     switch (queryParams.type) {
-      case "topScorers":
-        return leagueData.topScorers;
       case "standings":
-        return leagueData.teams;
+        const standingsResponse = await fetchFootballData(
+          `/competitions/${queryParams.league}/standings${queryParams.season ? `?season=${queryParams.season}` : ''}`
+        );
+        return standingsResponse.data?.standings?.[0]?.table || [];
+        
+      case "scorers":
+        const scorersResponse = await fetchFootballData(
+          `/competitions/${queryParams.league}/scorers${queryParams.season ? `?season=${queryParams.season}` : ''}`
+        );
+        return scorersResponse.data?.scorers || [];
+        
+      case "matches":
+        const matchesResponse = await fetchFootballData(
+          `/competitions/${queryParams.league}/matches${queryParams.season ? `?season=${queryParams.season}` : ''}`
+        );
+        return matchesResponse.data?.matches || [];
+        
+      case "team":
+        const teamResponse = await fetchFootballData(
+          `/teams/${queryParams.team}`
+        );
+        return teamResponse.data || null;
+        
+      case "competitions":
+        const competitionsResponse = await fetchFootballData(
+          '/competitions'
+        );
+        return competitionsResponse.data?.competitions || [];
+        
       default:
-        throw new Error("לא הצלחתי להבין את השאילתה. אנא נסה שוב.");
+        throw new Error("Invalid query type");
     }
   } catch (error) {
     console.error('Error in getFootballData:', error);
