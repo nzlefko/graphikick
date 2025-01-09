@@ -23,7 +23,7 @@ const transformLeagueData = (rawData: any): League => {
 
   // Initialize teams from the matches data
   rawData.matches.forEach((match: any) => {
-    const { team1, team2, score1, score2 } = match;
+    const { team1, team2, score } = match;
     
     // Add team1 if not exists
     if (!teamsMap.has(team1)) {
@@ -53,8 +53,11 @@ const transformLeagueData = (rawData: any): League => {
       });
     }
 
-    // Only process completed matches where both scores are numbers
-    if (typeof score1 === 'number' && typeof score2 === 'number') {
+    // Only process completed matches where both scores exist in the score object
+    if (score && typeof score.ft?.[0] === 'number' && typeof score.ft?.[1] === 'number') {
+      const score1 = score.ft[0];
+      const score2 = score.ft[1];
+      
       const team1Data = teamsMap.get(team1)!;
       const team2Data = teamsMap.get(team2)!;
 
