@@ -1,23 +1,24 @@
 import { League, Player, Team } from '@/types/football';
 
-const FOOTBALL_DATA_BASE_URL = 'https://raw.githubusercontent.com/openfootball/football.json/master/2023-24';
+const FOOTBALL_DATA_BASE_URL = 'https://raw.githubusercontent.com/openfootball/football.json/master';
 
-export const fetchLeagueData = async (leaguePath: string): Promise<League> => {
+export const fetchLeagueData = async (leaguePath: string, season?: string): Promise<League> => {
   try {
-    const response = await fetch(`${FOOTBALL_DATA_BASE_URL}/${leaguePath}`);
+    // Default to current season if none specified
+    const seasonPath = season || '2023-24';
+    const response = await fetch(`${FOOTBALL_DATA_BASE_URL}/${seasonPath}/${leaguePath}`);
     if (!response.ok) {
       throw new Error('Failed to fetch league data');
     }
     const data = await response.json();
-    return transformLeagueData(data);
+    return transformLeagueData(data, seasonPath);
   } catch (error) {
     console.error('Error fetching league data:', error);
     throw new Error('Failed to load league data');
   }
 };
 
-const transformLeagueData = (rawData: any): League => {
-  // OpenFootball data structure has matches array
+const transformLeagueData = (rawData: any, season: string): League => {
   const teams: Team[] = [];
   const teamsMap = new Map<string, Team>();
 
@@ -112,7 +113,7 @@ const transformLeagueData = (rawData: any): League => {
 
   return {
     name: "Premier League",
-    season: "2023/24",
+    season,
     teams: sortedTeams,
     topScorers
   };
@@ -121,12 +122,16 @@ const transformLeagueData = (rawData: any): League => {
 export const parseQuery = (query: string): { type: string; league?: string; season?: string } => {
   const lowercaseQuery = query.toLowerCase();
   
+  // Extract season if mentioned (format: YYYY-YY)
+  const seasonMatch = query.match(/\d{4}-\d{2}/);
+  const season = seasonMatch ? seasonMatch[0] : undefined;
+  
   // Check for top scorers queries in both languages
   if (lowercaseQuery.includes("מלך שערים") || 
       lowercaseQuery.includes("כובש") || 
       lowercaseQuery.includes("top scorer") || 
       lowercaseQuery.includes("scorer")) {
-    return { type: "topScorers", league: "Premier League" };
+    return { type: "topScorers", league: "Premier League", season };
   }
   
   // Check for standings queries in both languages
@@ -134,7 +139,7 @@ export const parseQuery = (query: string): { type: string; league?: string; seas
       lowercaseQuery.includes("דירוג") || 
       lowercaseQuery.includes("standing") || 
       lowercaseQuery.includes("table")) {
-    return { type: "standings", league: "Premier League" };
+    return { type: "standings", league: "Premier League", season };
   }
   
   return { type: "unknown" };
@@ -142,7 +147,7 @@ export const parseQuery = (query: string): { type: string; league?: string; seas
 
 export const getFootballData = async (queryParams: { type: string; league?: string; season?: string }) => {
   try {
-    const leagueData = await fetchLeagueData('en.1.json');
+    const leagueData = await fetchLeagueData('en.1.json', queryParams.season);
     
     switch (queryParams.type) {
       case "topScorers":
