@@ -8,13 +8,13 @@ export const fetchLeagueData = async (leaguePath: string, season?: string): Prom
     const seasonPath = season || '2023-24';
     const response = await fetch(`${FOOTBALL_DATA_BASE_URL}/${seasonPath}/${leaguePath}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch league data');
+      throw new Error(`Failed to fetch league data for season ${seasonPath}`);
     }
     const data = await response.json();
     return transformLeagueData(data, seasonPath);
   } catch (error) {
     console.error('Error fetching league data:', error);
-    throw new Error('Failed to load league data');
+    throw new Error(`Failed to load league data: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 
@@ -122,9 +122,21 @@ const transformLeagueData = (rawData: any, season: string): League => {
 export const parseQuery = (query: string): { type: string; league?: string; season?: string } => {
   const lowercaseQuery = query.toLowerCase();
   
-  // Extract season if mentioned (format: YYYY-YY)
+  // Extract and validate season format (YYYY-YY)
   const seasonMatch = query.match(/\d{4}-\d{2}/);
-  const season = seasonMatch ? seasonMatch[0] : undefined;
+  let season = undefined;
+  
+  if (seasonMatch) {
+    const fullYear = parseInt(seasonMatch[0].slice(0, 4));
+    const shortYear = parseInt(seasonMatch[0].slice(5, 7));
+    
+    // Validate that the short year is the next year after the full year
+    if (shortYear === (fullYear + 1) % 100) {
+      season = seasonMatch[0];
+    } else {
+      throw new Error('Invalid season format. Please use format YYYY-YY where YY is the next year (e.g., 2016-17)');
+    }
+  }
   
   // Check for top scorers queries in both languages
   if (lowercaseQuery.includes("מלך שערים") || 
