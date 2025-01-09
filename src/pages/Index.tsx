@@ -19,10 +19,10 @@ const Index = () => {
     setError(null);
     
     try {
-      const queryParams = parseQuery(query);
+      const queryParams = parseQuery(query, language);
       const results = await getFootballData(queryParams);
       
-      if (Array.isArray(results)) {
+      if (results) {
         setData(results);
         toast({
           title: language === 'he' ? "השאילתה בוצעה בהצלחה" : "Query executed successfully",

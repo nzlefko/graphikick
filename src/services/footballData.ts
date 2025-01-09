@@ -31,7 +31,7 @@ const fetchFootballData = async (endpoint: string): Promise<FootballResponse> =>
   }
 };
 
-export const parseQuery = (query: string): { 
+export const parseQuery = (query: string, language: 'he' | 'en'): { 
   type: string; 
   league?: string; 
   season?: string;
