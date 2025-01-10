@@ -27,6 +27,7 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('FOOTBALL_API_KEY')
     if (!apiKey) {
+      console.error('Football API key not configured')
       throw new Error('Football API key not configured')
     }
 
@@ -43,15 +44,30 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Football API error response:', errorText)
-      throw new Error(`Football API returned status ${response.status}: ${errorText}`)
+      
+      // Return a more detailed error response
+      return new Response(
+        JSON.stringify({
+          error: `Football API Error: ${response.status}`,
+          details: errorText,
+          endpoint: formattedEndpoint
+        }),
+        { 
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     const data = await response.json()
     console.log('Successfully received data from Football API')
     
-    return new Response(JSON.stringify({ data }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ data }), 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error) {
     console.error('Edge function error:', error.message)
     return new Response(

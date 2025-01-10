@@ -18,6 +18,8 @@ interface FootballResponse {
 // Fetch data from Football-Data.org API via Supabase Edge Function
 const fetchFootballData = async (endpoint: string): Promise<FootballResponse> => {
   try {
+    console.log('Fetching football data for endpoint:', endpoint);
+    
     const { data, error } = await supabase.functions.invoke('football-api', {
       body: { endpoint },
     });
@@ -28,9 +30,11 @@ const fetchFootballData = async (endpoint: string): Promise<FootballResponse> =>
     }
 
     if (!data) {
+      console.error('No data received from API');
       throw new Error('No data received from API');
     }
 
+    console.log('Received data:', data);
     return { data: data.data };
   } catch (error) {
     console.error('Error fetching football data:', error);
@@ -111,6 +115,8 @@ export const getFootballData = async (queryParams: {
   team?: string;
 }) => {
   try {
+    console.log('Getting football data with params:', queryParams);
+    
     switch (queryParams.type) {
       case "standings":
         const standingsResponse = await fetchFootballData(
