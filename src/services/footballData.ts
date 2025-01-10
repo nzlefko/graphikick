@@ -50,16 +50,12 @@ export const parseQuery = (query: string, language: 'he' | 'en'): {
 } => {
   const lowercaseQuery = query.toLowerCase();
   
-  // Extract season (YYYY-YY format)
-  const seasonMatch = query.match(/\d{4}-\d{2}/);
+  // Extract season (YYYY format)
+  const seasonMatch = query.match(/\d{4}/);
   let season = undefined;
   
   if (seasonMatch) {
-    const fullYear = parseInt(seasonMatch[0].slice(0, 4));
-    const shortYear = parseInt(seasonMatch[0].slice(5, 7));
-    if (shortYear === (fullYear + 1) % 100) {
-      season = seasonMatch[0];
-    }
+    season = seasonMatch[0]; // Just use the year
   }
 
   // Hebrew keywords
