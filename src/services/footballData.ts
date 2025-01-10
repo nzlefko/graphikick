@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 // API configuration
 const getApiToken = () => {
   const token = localStorage.getItem('FOOTBALL_API_TOKEN');
@@ -8,27 +10,20 @@ const getApiToken = () => {
   return token;
 };
 
-const FOOTBALL_API_BASE_URL = 'https://corsproxy.io/?https://api.football-data.org/v4';
-
 interface FootballResponse {
   data: any;
   error?: string;
 }
 
-// Fetch data from Football-Data.org API
+// Fetch data from Football-Data.org API via Supabase Edge Function
 const fetchFootballData = async (endpoint: string): Promise<FootballResponse> => {
   try {
-    const response = await fetch(`${FOOTBALL_API_BASE_URL}${endpoint}`, {
-      headers: {
-        'X-Auth-Token': getApiToken()
-      }
+    const { data, error } = await supabase.functions.invoke('football-api', {
+      body: { endpoint },
     });
+
+    if (error) throw error;
     
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
-    }
-    
-    const data = await response.json();
     return { data };
   } catch (error) {
     console.error('Error fetching football data:', error);
