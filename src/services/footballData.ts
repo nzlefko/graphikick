@@ -22,15 +22,19 @@ const fetchFootballData = async (endpoint: string): Promise<FootballResponse> =>
       body: { endpoint },
     });
 
-    if (error) throw error;
-    
-    return { data };
+    if (error) {
+      console.error('Supabase function error:', error);
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error('No data received from API');
+    }
+
+    return { data: data.data };
   } catch (error) {
     console.error('Error fetching football data:', error);
-    return { 
-      data: null, 
-      error: error instanceof Error ? error.message : 'Failed to fetch data' 
-    };
+    throw error;
   }
 };
 
