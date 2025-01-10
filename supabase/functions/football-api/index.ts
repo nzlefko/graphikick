@@ -15,18 +15,24 @@ serve(async (req) => {
 
   try {
     const { endpoint } = await req.json()
-    console.log('Requesting endpoint:', endpoint)
+    console.log('Received request for endpoint:', endpoint)
 
     if (!endpoint) {
       throw new Error('No endpoint provided')
     }
+
+    // Ensure endpoint starts with a forward slash
+    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    console.log('Formatted endpoint:', formattedEndpoint)
 
     const apiKey = Deno.env.get('FOOTBALL_API_KEY')
     if (!apiKey) {
       throw new Error('Football API key not configured')
     }
 
-    const response = await fetch(`${FOOTBALL_API_BASE_URL}${endpoint}`, {
+    console.log('Making request to:', `${FOOTBALL_API_BASE_URL}${formattedEndpoint}`)
+    
+    const response = await fetch(`${FOOTBALL_API_BASE_URL}${formattedEndpoint}`, {
       headers: {
         'X-Auth-Token': apiKey,
       },
@@ -36,11 +42,12 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Football API error:', errorText)
-      throw new Error(`API Error: ${response.status}`)
+      console.error('Football API error response:', errorText)
+      throw new Error(`Football API returned status ${response.status}: ${errorText}`)
     }
 
     const data = await response.json()
+    console.log('Successfully received data from Football API')
     
     return new Response(JSON.stringify({ data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -48,7 +55,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Edge function error:', error.message)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error instanceof Error ? error.stack : undefined
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
