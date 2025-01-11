@@ -9,7 +9,7 @@ export const initializeNLP = async () => {
     questionAnswerer = await pipeline(
       'question-answering',
       'Xenova/distilbert-base-cased-distilled-squad',
-      { device: 'cpu' } // Changed to CPU to avoid execution provider issues
+      { device: 'wasm' } // Changed to WASM for better compatibility
     );
     console.log('NLP model initialized successfully');
   } catch (error) {
