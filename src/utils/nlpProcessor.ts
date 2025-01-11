@@ -1,4 +1,5 @@
 import { pipeline } from '@huggingface/transformers';
+import { parseQuery } from './queryParser';
 
 let questionAnswerer: any = null;
 
@@ -8,7 +9,7 @@ export const initializeNLP = async () => {
     questionAnswerer = await pipeline(
       'question-answering',
       'Xenova/distilbert-base-cased-distilled-squad',
-      { device: 'webgpu' }
+      { device: 'cpu' } // Changed to CPU to avoid execution provider issues
     );
     console.log('NLP model initialized successfully');
   } catch (error) {
@@ -27,6 +28,11 @@ export const processQuery = async (query: string): Promise<{
     await initializeNLP();
   }
 
+  // Ensure query is a string and not undefined/null
+  if (!query || typeof query !== 'string') {
+    throw new Error('Invalid query: Query must be a non-empty string');
+  }
+
   // Context for the model to understand football-related queries
   const context = `
     You can ask about football statistics including:
@@ -41,8 +47,8 @@ export const processQuery = async (query: string): Promise<{
 
   try {
     const result = await questionAnswerer({
-      question: query,
-      context: context,
+      question: query.trim(),
+      context: context.trim(),
     });
 
     console.log('NLP processing result:', result);
@@ -79,7 +85,6 @@ export const processQuery = async (query: string): Promise<{
   } catch (error) {
     console.error('Error processing query with NLP:', error);
     // Fallback to the original keyword-based parsing
-    const { parseQuery } = await import('./queryParser');
     return parseQuery(query, 'en');
   }
 };
