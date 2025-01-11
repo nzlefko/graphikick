@@ -9,7 +9,7 @@ export const initializeNLP = async () => {
     questionAnswerer = await pipeline(
       'question-answering',
       'Xenova/distilbert-base-cased-distilled-squad',
-      { device: 'wasm' } // Changed to WASM for better compatibility
+      { device: 'wasm' }
     );
     console.log('NLP model initialized successfully');
   } catch (error) {
@@ -18,37 +18,33 @@ export const initializeNLP = async () => {
   }
 };
 
-export const processQuery = async (query: string): Promise<{
-  type: string;
-  league?: string;
-  season?: string;
-  team?: string;
-}> => {
-  if (!questionAnswerer) {
-    await initializeNLP();
-  }
-
-  // Ensure query is a string and not undefined/null
+export const processQuery = async (query: string) => {
   if (!query || typeof query !== 'string') {
     throw new Error('Invalid query: Query must be a non-empty string');
   }
 
-  // Context for the model to understand football-related queries
+  const cleanQuery = query.trim();
+  
+  // Context for football-related queries
   const context = `
-    You can ask about football statistics including:
-    - League standings (table positions)
-    - Top scorers
-    - Match results
-    - Team information
+    This is a football statistics system. You can ask about:
+    - League standings and table positions
+    - Top scorers and goal statistics
+    - Match results and fixtures
+    - Team information and squad details
     - Competition details
-    The available leagues include Premier League (PL).
-    You can specify seasons using years like 2023.
-  `;
+    Available leagues include Premier League (PL).
+    You can specify seasons using years (e.g., 2023).
+  `.trim();
 
   try {
+    if (!questionAnswerer) {
+      await initializeNLP();
+    }
+
     const result = await questionAnswerer({
-      question: query.trim(),
-      context: context.trim(),
+      question: cleanQuery,
+      context: context,
     });
 
     console.log('NLP processing result:', result);
@@ -56,7 +52,7 @@ export const processQuery = async (query: string): Promise<{
     // Extract key information from the model's answer
     const answer = result.answer.toLowerCase();
     
-    // Determine query type based on the model's understanding
+    // Map the answer to query parameters
     let type = 'unknown';
     if (answer.includes('stand') || answer.includes('table') || answer.includes('position')) {
       type = 'standings';
@@ -71,20 +67,17 @@ export const processQuery = async (query: string): Promise<{
     }
 
     // Extract season if present (4-digit year)
-    const seasonMatch = query.match(/\d{4}/);
+    const seasonMatch = cleanQuery.match(/\d{4}/);
     const season = seasonMatch ? seasonMatch[0] : undefined;
-
-    // Default to Premier League for now
-    const league = 'PL';
 
     return {
       type,
-      league,
+      league: 'PL', // Default to Premier League
       season,
     };
   } catch (error) {
     console.error('Error processing query with NLP:', error);
-    // Fallback to the original keyword-based parsing
+    // Fallback to keyword-based parsing
     return parseQuery(query, 'en');
   }
 };
