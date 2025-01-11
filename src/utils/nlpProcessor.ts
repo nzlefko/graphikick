@@ -42,15 +42,29 @@ export const processQuery = async (query: string) => {
       await initializeNLP();
     }
 
+    // Ensure both inputs are strings and properly formatted
+    if (typeof cleanQuery !== 'string' || typeof context !== 'string') {
+      throw new Error('Invalid input types for question answering');
+    }
+
+    // Log the inputs for debugging
+    console.log('Processing query:', { cleanQuery, context });
+
     const result = await questionAnswerer({
       question: cleanQuery,
       context: context,
+      topK: 1, // Limit to top result
+      maxLength: 512, // Limit response length
     });
 
     console.log('NLP processing result:', result);
 
+    if (!result || !result.answer) {
+      throw new Error('Invalid response from NLP model');
+    }
+
     // Extract key information from the model's answer
-    const answer = result.answer.toLowerCase();
+    const answer = result.answer.toString().toLowerCase();
     
     // Map the answer to query parameters
     let type = 'unknown';
