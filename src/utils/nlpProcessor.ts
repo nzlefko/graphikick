@@ -7,7 +7,7 @@ export const initializeNLP = async () => {
     console.log('Initializing NLP model...');
     questionAnswerer = await pipeline(
       'question-answering',
-      'deepset/roberta-large-squad2',
+      'Xenova/distilbert-base-cased-distilled-squad',
       { device: 'webgpu' }
     );
     console.log('NLP model initialized successfully');
