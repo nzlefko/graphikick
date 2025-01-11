@@ -1,7 +1,5 @@
-import { parseQuery } from '@/utils/queryParser';
+import { processQuery } from '@/utils/nlpProcessor';
 import { fetchFootballData } from './api';
-
-export { parseQuery };
 
 export const getFootballData = async (queryParams: { 
   type: string; 
@@ -51,3 +49,5 @@ export const getFootballData = async (queryParams: {
     throw error;
   }
 };
+
+export { processQuery };

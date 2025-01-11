@@ -2,7 +2,7 @@ import { useState } from "react";
 import QueryInput from "@/components/QueryInput";
 import ResultsDisplay from "@/components/ResultsDisplay";
 import { useToast } from "@/hooks/use-toast";
-import { parseQuery, getFootballData } from "@/services/footballData";
+import { getFootballData, processQuery } from "@/services/footballData";
 import { Button } from "@/components/ui/button";
 import { Languages } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -19,7 +19,7 @@ const Index = () => {
     setError(null);
     
     try {
-      const queryParams = parseQuery(query, language);
+      const queryParams = await processQuery(query);
       const results = await getFootballData(queryParams);
       
       if (results) {
