@@ -1,19 +1,14 @@
 import { pipeline } from '@huggingface/transformers';
-import { parseQuery } from './queryParser';
 
 let questionAnswerer: any = null;
 
-export const initializeNLP = async () => {
+const initializeNLP = async () => {
+  console.info("Initializing NLP model...");
   try {
-    console.log('Initializing NLP model...');
-    questionAnswerer = await pipeline(
-      'question-answering',
-      'Xenova/distilbert-base-cased-distilled-squad',
-      { device: 'wasm' }
-    );
-    console.log('NLP model initialized successfully');
+    questionAnswerer = await pipeline('question-answering', 'distilbert-base-cased-distilled-squad');
+    console.info("NLP model initialized successfully");
   } catch (error) {
-    console.error('Error initializing NLP model:', error);
+    console.error("Error initializing NLP model:", error);
     throw error;
   }
 };
@@ -24,55 +19,38 @@ export const processQuery = async (query: string) => {
   }
 
   const cleanQuery = query.trim();
-  
-  // Context for football-related queries
-  const context = `
-    This is a football statistics system. You can ask about:
-    - League standings and table positions
-    - Top scorers and goal statistics
-    - Match results and fixtures
-    - Team information and squad details
-    - Competition details
-    Available leagues include Premier League (PL).
-    You can specify seasons using years (e.g., 2023).
-  `.trim();
+  console.info("Processing query:", { cleanQuery, context });
 
   try {
     if (!questionAnswerer) {
       await initializeNLP();
     }
 
-    // Ensure both inputs are strings and properly formatted
-    if (typeof cleanQuery !== 'string' || typeof context !== 'string') {
-      throw new Error('Invalid input types for question answering');
-    }
-
-    // Log the inputs for debugging
-    console.log('Processing query:', { cleanQuery, context });
+    // Ensure both inputs are strings
+    const context = `This is a football statistics system. You can ask about:
+    - League standings and table positions
+    - Top scorers and goal statistics
+    - Match results and fixtures
+    - Team information and squad details
+    - Competition details
+    Available leagues include Premier League (PL).
+    You can specify seasons using years (e.g., 2023).`.trim();
 
     const result = await questionAnswerer({
       question: cleanQuery,
       context: context,
-      topK: 1, // Limit to top result
-      maxLength: 512, // Limit response length
     });
 
-    console.log('NLP processing result:', result);
-
-    if (!result || !result.answer) {
-      throw new Error('Invalid response from NLP model');
-    }
-
-    // Extract key information from the model's answer
+    // Process the answer to determine the type of query
     const answer = result.answer.toString().toLowerCase();
     
-    // Map the answer to query parameters
+    // Determine query type based on keywords in the answer and original query
     let type = 'unknown';
-    if (answer.includes('stand') || answer.includes('table') || answer.includes('position')) {
-      type = 'standings';
-    } else if (answer.includes('scorer') || answer.includes('goal')) {
+    if (answer.includes('scorer') || answer.includes('goal') || cleanQuery.includes('scorer') || cleanQuery.includes('goal')) {
       type = 'scorers';
-    } else if (answer.includes('match') || answer.includes('result')) {
+    } else if (answer.includes('standing') || answer.includes('table') || answer.includes('position')) {
+      type = 'standings';
+    } else if (answer.includes('match') || answer.includes('fixture') || answer.includes('result')) {
       type = 'matches';
     } else if (answer.includes('team') || answer.includes('squad')) {
       type = 'team';
@@ -80,18 +58,24 @@ export const processQuery = async (query: string) => {
       type = 'competitions';
     }
 
-    // Extract season if present (4-digit year)
-    const seasonMatch = cleanQuery.match(/\d{4}/);
-    const season = seasonMatch ? seasonMatch[0] : undefined;
+    // Extract year if present
+    const yearMatch = cleanQuery.match(/\b20\d{2}\b/);
+    const year = yearMatch ? yearMatch[0] : '2023';
+
+    // Extract league if present (default to Premier League)
+    const league = cleanQuery.toLowerCase().includes('la liga') ? 'PD' : 
+                  cleanQuery.toLowerCase().includes('bundesliga') ? 'BL1' : 
+                  cleanQuery.toLowerCase().includes('serie a') ? 'SA' : 
+                  'PL';
 
     return {
       type,
-      league: 'PL', // Default to Premier League
-      season,
+      league,
+      season: year,
+      limit: 10
     };
   } catch (error) {
-    console.error('Error processing query with NLP:', error);
-    // Fallback to keyword-based parsing
-    return parseQuery(query, 'en');
+    console.error("Error processing query with NLP:", error);
+    throw error;
   }
 };
