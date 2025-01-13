@@ -72,6 +72,8 @@ const Index = () => {
     }
   };
 
+  const canShowVisualization = data && data.length > 0;
+
   return (
     <div className="min-h-screen bg-[#9b87f5] py-12 px-4" dir={language === 'he' ? "rtl" : "ltr"}>
       <div className="max-w-7xl mx-auto space-y-8">
