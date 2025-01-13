@@ -19,15 +19,9 @@ export const processQuery = async (query: string) => {
   }
 
   const cleanQuery = query.trim();
-  console.info("Processing query:", { cleanQuery, context });
-
-  try {
-    if (!questionAnswerer) {
-      await initializeNLP();
-    }
-
-    // Ensure both inputs are strings
-    const context = `This is a football statistics system. You can ask about:
+  
+  // Define context before using it in console.log
+  const context = `This is a football statistics system. You can ask about:
     - League standings and table positions
     - Top scorers and goal statistics
     - Match results and fixtures
@@ -35,6 +29,13 @@ export const processQuery = async (query: string) => {
     - Competition details
     Available leagues include Premier League (PL).
     You can specify seasons using years (e.g., 2023).`.trim();
+
+  console.info("Processing query:", { cleanQuery, context });
+
+  try {
+    if (!questionAnswerer) {
+      await initializeNLP();
+    }
 
     const result = await questionAnswerer({
       question: cleanQuery,
