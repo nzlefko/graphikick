@@ -12,6 +12,7 @@ const Index = () => {
   const [data, setData] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
+  const [textResponse, setTextResponse] = useState<string>("");
   const { toast } = useToast();
   const { language, toggleLanguage } = useLanguage();
 
@@ -19,6 +20,7 @@ const Index = () => {
     setIsLoading(true);
     setError(null);
     setShowVisualization(false);
+    setTextResponse("");
     
     try {
       const queryParams = await processQuery(query);
@@ -26,11 +28,8 @@ const Index = () => {
       
       if (results) {
         setData(results);
-        // Show text response first
-        toast({
-          title: language === 'he' ? "התקבלה תשובה" : "Answer received",
-          description: formatTextResponse(results, queryParams.type),
-        });
+        const formattedResponse = formatTextResponse(results, queryParams.type);
+        setTextResponse(formattedResponse);
       } else {
         throw new Error(language === 'he' ? "תוצאות לא תקינות" : "Invalid results");
       }
@@ -38,11 +37,7 @@ const Index = () => {
       const errorMessage = err instanceof Error ? err.message : 
         language === 'he' ? "השאילתה נכשלה. אנא נסה שוב." : "Query failed. Please try again.";
       setError(errorMessage);
-      toast({
-        variant: "destructive",
-        title: language === 'he' ? "שגיאה" : "Error",
-        description: errorMessage,
-      });
+      setTextResponse(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -106,6 +101,12 @@ const Index = () => {
         </div>
 
         <QueryInput onSubmit={handleQuery} isLoading={isLoading} language={language} />
+
+        {textResponse && (
+          <div className="bg-white p-4 rounded-lg shadow-sm animate-fade-in text-center">
+            <p className="text-lg text-gray-700">{textResponse}</p>
+          </div>
+        )}
 
         {canShowVisualization && !showVisualization && (
           <div className="flex justify-center mt-4">
