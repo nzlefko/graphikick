@@ -72,10 +72,8 @@ const Index = () => {
     }
   };
 
-  const canShowVisualization = data && data.length > 0;
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4" dir={language === 'he' ? "rtl" : "ltr"}>
+    <div className="min-h-screen bg-[#9b87f5] py-12 px-4" dir={language === 'he' ? "rtl" : "ltr"}>
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex justify-end mb-4">
           <Button
@@ -90,10 +88,10 @@ const Index = () => {
         </div>
 
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-secondary">
-            {language === 'he' ? "מחקר סטטיסטיקות כדורגל" : "Football Statistics Research"}
+          <h1 className="text-4xl font-bold text-white">
+            {language === 'he' ? "גרפיקיק" : "GraphiKick"}
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-white/90 max-w-2xl mx-auto">
             {language === 'he' 
               ? "שאל שאלות על סטטיסטיקות כדורגל בשפה טבעית וצפה בתוצאות"
               : "Ask questions about football statistics in natural language and view results"}
@@ -103,7 +101,7 @@ const Index = () => {
         <QueryInput onSubmit={handleQuery} isLoading={isLoading} language={language} />
 
         {textResponse && (
-          <div className="bg-white p-4 rounded-lg shadow-sm animate-fade-in text-center">
+          <div className="bg-white/90 p-4 rounded-lg shadow-sm animate-fade-in text-center">
             <p className="text-lg text-gray-700">{textResponse}</p>
           </div>
         )}
@@ -113,7 +111,7 @@ const Index = () => {
             <Button
               onClick={() => setShowVisualization(true)}
               variant="outline"
-              className="gap-2"
+              className="gap-2 bg-white/90 hover:bg-white"
             >
               <LineChart className="h-4 w-4" />
               {language === 'he' ? "הצג ויזואליזציה" : "Show Visualization"}
