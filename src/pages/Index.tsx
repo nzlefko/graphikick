@@ -1,11 +1,12 @@
 import { useState } from "react";
 import QueryInput from "@/components/QueryInput";
 import ResultsDisplay from "@/components/ResultsDisplay";
+import Header from "@/components/Header";
+import VisualizationToggle from "@/components/VisualizationToggle";
 import { useToast } from "@/hooks/use-toast";
 import { getFootballData, processQuery } from "@/services/footballData";
-import { Button } from "@/components/ui/button";
-import { Languages, LineChart } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatTextResponse } from "@/utils/formatResponse";
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +29,7 @@ const Index = () => {
       
       if (results) {
         setData(results);
-        const formattedResponse = formatTextResponse(results, queryParams.type);
+        const formattedResponse = formatTextResponse(results, queryParams.type, language);
         setTextResponse(formattedResponse);
       } else {
         throw new Error(language === 'he' ? "תוצאות לא תקינות" : "Invalid results");
@@ -43,63 +44,13 @@ const Index = () => {
     }
   };
 
-  const formatTextResponse = (data: any[], type: string): string => {
-    if (!Array.isArray(data) || data.length === 0) {
-      return language === 'he' ? "לא נמצאו תוצאות" : "No results found";
-    }
-
-    switch (type) {
-      case 'standings':
-        const topTeam = data[0];
-        return language === 'he' 
-          ? `${topTeam.team.name} מובילה את הטבלה עם ${topTeam.points} נקודות`
-          : `${topTeam.team.name} leads the table with ${topTeam.points} points`;
-      
-      case 'scorers':
-        const topScorer = data[0];
-        return language === 'he'
-          ? `${topScorer.player.name} הוא מלך השערים עם ${topScorer.goals} שערים`
-          : `${topScorer.player.name} is the top scorer with ${topScorer.goals} goals`;
-      
-      case 'matches':
-        const recentMatch = data[0];
-        return language === 'he'
-          ? `המשחק האחרון: ${recentMatch.homeTeam.name} ${recentMatch.score.fullTime.home ?? '-'} - ${recentMatch.score.fullTime.away ?? '-'} ${recentMatch.awayTeam.name}`
-          : `Latest match: ${recentMatch.homeTeam.name} ${recentMatch.score.fullTime.home ?? '-'} - ${recentMatch.score.fullTime.away ?? '-'} ${recentMatch.awayTeam.name}`;
-      
-      default:
-        return language === 'he' ? "התקבלו תוצאות" : "Results received";
-    }
-  };
-
   const canShowVisualization = data && data.length > 0;
 
   return (
     <div className="min-h-screen bg-[#9b87f5] py-12 px-4" dir={language === 'he' ? "rtl" : "ltr"}>
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-end mb-4">
-          <Button
-            onClick={toggleLanguage}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <Languages className="h-4 w-4" />
-            {language === 'he' ? 'English' : 'עברית'}
-          </Button>
-        </div>
-
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-white">
-            {language === 'he' ? "גרפיקיק" : "GraphiKick"}
-          </h1>
-          <p className="text-white/90 max-w-2xl mx-auto">
-            {language === 'he' 
-              ? "שאל שאלות על סטטיסטיקות כדורגל בשפה טבעית וצפה בתוצאות"
-              : "Ask questions about football statistics in natural language and view results"}
-          </p>
-        </div>
-
+        <Header language={language} toggleLanguage={toggleLanguage} />
+        
         <QueryInput onSubmit={handleQuery} isLoading={isLoading} language={language} />
 
         {textResponse && (
@@ -109,16 +60,10 @@ const Index = () => {
         )}
 
         {canShowVisualization && !showVisualization && (
-          <div className="flex justify-center mt-4">
-            <Button
-              onClick={() => setShowVisualization(true)}
-              variant="outline"
-              className="gap-2 bg-white/90 hover:bg-white"
-            >
-              <LineChart className="h-4 w-4" />
-              {language === 'he' ? "הצג ויזואליזציה" : "Show Visualization"}
-            </Button>
-          </div>
+          <VisualizationToggle 
+            language={language} 
+            onToggle={() => setShowVisualization(true)} 
+          />
         )}
 
         {showVisualization && (
