@@ -1,3 +1,5 @@
+export type language = 'he' | 'en';
+
 export interface Player {
   id: number;
   name: string;
