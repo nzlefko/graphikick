@@ -10,8 +10,11 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('Received request:', req.method, req.url)
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request')
     return new Response(null, { 
       status: 204,
       headers: corsHeaders 
@@ -20,17 +23,20 @@ serve(async (req) => {
 
   try {
     const { endpoint, params } = await req.json()
-    console.log('Received request for endpoint:', endpoint, 'params:', params)
+    console.log('Processing request for endpoint:', endpoint, 'params:', params)
 
     if (!endpoint) {
       throw new Error('No endpoint provided')
     }
 
-    // Ensure endpoint starts with a forward slash
-    const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-    
+    const apiKey = Deno.env.get('FOOTBALL_API_KEY')
+    if (!apiKey) {
+      console.error('Football API key not configured')
+      throw new Error('Football API key not configured')
+    }
+
     // Build URL with query parameters
-    const url = new URL(`${FOOTBALL_API_BASE_URL}${formattedEndpoint}`)
+    const url = new URL(`${FOOTBALL_API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`)
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value) url.searchParams.append(key, value.toString())
@@ -39,12 +45,6 @@ serve(async (req) => {
     
     console.log('Making request to:', url.toString())
     
-    const apiKey = Deno.env.get('FOOTBALL_API_KEY')
-    if (!apiKey) {
-      console.error('Football API key not configured')
-      throw new Error('Football API key not configured')
-    }
-
     const response = await fetch(url.toString(), {
       headers: {
         'X-Auth-Token': apiKey,
@@ -64,8 +64,11 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ data }), 
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        },
       }
     )
   } catch (error) {
@@ -78,7 +81,10 @@ serve(async (req) => {
       }),
       { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        },
       }
     )
   }
