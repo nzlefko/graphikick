@@ -23,12 +23,12 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('API_FOOTBALL_KEY')
     if (!apiKey) {
-      console.error('API Football key not configured')
+      console.error('API Football key not found in environment')
       throw new Error('API Football key not configured')
     }
 
-    // Log the API key length for debugging (never log the actual key)
-    console.log('API key length:', apiKey.length)
+    // Log API key presence (never log the actual key)
+    console.log('API key is present and has length:', apiKey.length)
 
     // Construct URL with query parameters
     const url = new URL(`${API_FOOTBALL_BASE_URL}${endpoint}`)
@@ -54,8 +54,9 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('API Football error response:', errorText)
+      console.error('Response status:', response.status)
       console.error('Response headers:', Object.fromEntries(response.headers.entries()))
-      throw new Error(`API Football Error: ${response.status}`)
+      throw new Error(`API Football Error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
