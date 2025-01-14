@@ -5,12 +5,12 @@ interface FootballResponse {
   error?: string;
 }
 
-export const fetchFootballData = async (endpoint: string): Promise<FootballResponse> => {
+export const fetchFootballData = async (endpoint: string, params?: Record<string, string>): Promise<FootballResponse> => {
   try {
-    console.log('Fetching football data for endpoint:', endpoint);
+    console.log('Fetching football data for endpoint:', endpoint, 'with params:', params);
     
-    const { data, error } = await supabase.functions.invoke('football-api', {
-      body: { endpoint },
+    const { data, error } = await supabase.functions.invoke('api-football', {
+      body: { endpoint, params },
     });
 
     if (error) {
