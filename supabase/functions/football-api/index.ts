@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
+const FOOTBALL_API_BASE_URL = 'https://api.football-data.org/v4'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-
-const FOOTBALL_API_BASE_URL = 'https://api.football-data.org/v4'
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -14,8 +14,8 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint } = await req.json()
-    console.log('Received request for endpoint:', endpoint)
+    const { endpoint, params } = await req.json()
+    console.log('Received request for endpoint:', endpoint, 'params:', params)
 
     if (!endpoint) {
       throw new Error('No endpoint provided')
@@ -23,17 +23,24 @@ serve(async (req) => {
 
     // Ensure endpoint starts with a forward slash
     const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-    console.log('Formatted endpoint:', formattedEndpoint)
-
+    
+    // Build URL with query parameters
+    const url = new URL(`${FOOTBALL_API_BASE_URL}${formattedEndpoint}`)
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) url.searchParams.append(key, value.toString())
+      })
+    }
+    
+    console.log('Making request to:', url.toString())
+    
     const apiKey = Deno.env.get('FOOTBALL_API_KEY')
     if (!apiKey) {
       console.error('Football API key not configured')
       throw new Error('Football API key not configured')
     }
 
-    console.log('Making request to:', `${FOOTBALL_API_BASE_URL}${formattedEndpoint}`)
-    
-    const response = await fetch(`${FOOTBALL_API_BASE_URL}${formattedEndpoint}`, {
+    const response = await fetch(url.toString(), {
       headers: {
         'X-Auth-Token': apiKey,
       },
@@ -44,19 +51,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Football API error response:', errorText)
-      
-      // Return a more detailed error response
-      return new Response(
-        JSON.stringify({
-          error: `Football API Error: ${response.status}`,
-          details: errorText,
-          endpoint: formattedEndpoint
-        }),
-        { 
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
+      throw new Error(`Football API Error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
@@ -69,11 +64,12 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Edge function error:', error.message)
+    console.error('Edge function error:', error)
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error instanceof Error ? error.stack : undefined
+        details: error instanceof Error ? error.stack : undefined,
+        endpoint: req.body ? JSON.parse(await req.text()).endpoint : undefined
       }),
       { 
         status: 500,
