@@ -27,11 +27,16 @@ serve(async (req) => {
       throw new Error('API Football key not configured')
     }
 
+    // Log the API key length for debugging (never log the actual key)
+    console.log('API key length:', apiKey.length)
+
     // Construct URL with query parameters
     const url = new URL(`${API_FOOTBALL_BASE_URL}${endpoint}`)
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.append(key, value as string)
+        if (value) {
+          url.searchParams.append(key, value.toString())
+        }
       })
     }
 
@@ -49,6 +54,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('API Football error response:', errorText)
+      console.error('Response headers:', Object.fromEntries(response.headers.entries()))
       throw new Error(`API Football Error: ${response.status}`)
     }
 
@@ -63,6 +69,8 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Edge function error:', error.message)
+    console.error('Full error details:', error)
+    
     return new Response(
       JSON.stringify({ 
         error: error.message,
