@@ -6,82 +6,102 @@ export const processQuery = async (query: string) => {
   const cleanQuery = query.trim().toLowerCase();
   console.info("Processing query:", { cleanQuery });
 
-  // More specific keyword matching
+  // Initialize parameters with defaults
   let type = 'unknown';
   let league = 'PL'; // Default to Premier League
-  let season = '2023'; // Default season
+  let season = new Date().getFullYear().toString(); // Default to current year
   let team = undefined;
 
-  // Extract year if present
+  // Extract year/season
   const yearMatch = cleanQuery.match(/\b20\d{2}\b/);
   if (yearMatch) {
     season = yearMatch[0];
+  } else if (cleanQuery.includes('last season')) {
+    season = (parseInt(season) - 1).toString();
   }
 
-  // Extract league if present
-  if (cleanQuery.includes('la liga')) {
-    league = 'PD';
-  } else if (cleanQuery.includes('bundesliga')) {
-    league = 'BL1';
-  } else if (cleanQuery.includes('serie a')) {
-    league = 'SA';
-  }
+  // Enhanced league detection
+  const leaguePatterns = {
+    'PD': ['la liga', 'spanish league', 'spain'],
+    'BL1': ['bundesliga', 'german league', 'germany'],
+    'SA': ['serie a', 'italian league', 'italy'],
+    'FL1': ['ligue 1', 'french league', 'france'],
+    'PL': ['premier league', 'english league', 'england']
+  };
 
-  // Check for standings/table related queries
-  if (cleanQuery.includes('standing') || 
-      cleanQuery.includes('table') || 
-      cleanQuery.includes('position') ||
-      cleanQuery.includes('rank') ||
-      cleanQuery.includes('league table')) {
-    type = 'standings';
-  }
-  // Check for scorer related queries with more specific matching
-  else if (cleanQuery.includes('top scorer') || 
-           cleanQuery.includes('goal scorer') || 
-           cleanQuery.includes('most goals') ||
-           cleanQuery.includes('leading scorer') ||
-           cleanQuery.includes('מלך שערים')) {
-    type = 'scorers';
-  }
-  // Check for match related queries with more specific matching
-  else if (cleanQuery.includes('last match') || 
-           cleanQuery.includes('recent game') || 
-           cleanQuery.includes('match result') || 
-           cleanQuery.includes('score') ||
-           cleanQuery.includes('fixture') ||
-           cleanQuery.includes('תוצאות')) {
-    type = 'matches';
-  }
-  // Check for team related queries
-  else if (cleanQuery.includes('team info') || 
-           cleanQuery.includes('squad') || 
-           cleanQuery.includes('club details') ||
-           cleanQuery.includes('team roster')) {
-    type = 'team';
-    
-    // Try to extract team name from common Premier League teams
-    const teams = {
-      'manchester united': 'MUFC',
-      'manchester city': 'MCFC',
-      'liverpool': 'LIV',
-      'chelsea': 'CHE',
-      'arsenal': 'ARS',
-      'tottenham': 'TOT',
-      // Add more teams as needed
-    };
-
-    for (const [teamName, teamCode] of Object.entries(teams)) {
-      if (cleanQuery.includes(teamName)) {
-        team = teamCode;
-        break;
-      }
+  for (const [code, patterns] of Object.entries(leaguePatterns)) {
+    if (patterns.some(pattern => cleanQuery.includes(pattern))) {
+      league = code;
+      break;
     }
   }
-  // Check for competition related queries
-  else if (cleanQuery.includes('league') || 
-           cleanQuery.includes('competition') ||
-           cleanQuery.includes('tournament')) {
-    type = 'competitions';
+
+  // Enhanced query type detection with more patterns
+  const queryPatterns = {
+    standings: [
+      'standing', 'table', 'position', 'rank', 'league table',
+      'who is leading', 'who leads', 'top of', 'bottom of',
+      'relegated', 'promotion', 'points', 'מיקום', 'טבלה'
+    ],
+    scorers: [
+      'top scorer', 'goal scorer', 'most goals', 'leading scorer',
+      'who scored', 'best striker', 'golden boot', 'מלך שערים',
+      'כובש', 'שערים'
+    ],
+    matches: [
+      'match', 'game', 'fixture', 'score', 'result', 'played',
+      'when', 'next game', 'last game', 'upcoming', 'schedule',
+      'משחק', 'תוצאה', 'מתי'
+    ],
+    team: [
+      'team info', 'squad', 'roster', 'players', 'club',
+      'who plays for', 'team sheet', 'lineup', 'formation',
+      'סגל', 'שחקנים', 'הרכב'
+    ],
+    competitions: [
+      'league', 'competition', 'tournament', 'championships',
+      'available leagues', 'which leagues', 'ליגות', 'תחרויות'
+    ]
+  };
+
+  // Find the most relevant query type based on pattern matching
+  let maxMatches = 0;
+  for (const [patternType, patterns] of Object.entries(queryPatterns)) {
+    const matches = patterns.filter(pattern => cleanQuery.includes(pattern)).length;
+    if (matches > maxMatches) {
+      maxMatches = matches;
+      type = patternType;
+    }
+  }
+
+  // Extract team names (basic implementation - can be expanded)
+  const commonTeams = {
+    'manchester united': 'MUFC',
+    'manchester city': 'MCFC',
+    'liverpool': 'LIV',
+    'chelsea': 'CHE',
+    'arsenal': 'ARS',
+    'tottenham': 'TOT',
+    'barcelona': 'BAR',
+    'real madrid': 'RMA',
+    'bayern munich': 'BAY',
+    'paris saint-germain': 'PSG',
+    'juventus': 'JUV',
+    'milan': 'MIL'
+  };
+
+  for (const [teamName, teamCode] of Object.entries(commonTeams)) {
+    if (cleanQuery.includes(teamName)) {
+      team = teamCode;
+      break;
+    }
+  }
+
+  // Time-based query detection
+  if (cleanQuery.includes('next') || cleanQuery.includes('upcoming')) {
+    type = 'matches';
+  } else if (cleanQuery.includes('history') || cleanQuery.includes('previous')) {
+    type = 'matches';
   }
 
   console.info("Query processed:", { type, league, season, team });
