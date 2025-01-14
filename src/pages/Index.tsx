@@ -26,7 +26,7 @@ const Index = () => {
   const [textResponse, setTextResponse] = useState<string>("");
   const [selectedCompetition, setSelectedCompetition] = useState<string | null>(null);
   const { toast } = useToast();
-  const { language } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
 
   const handleQuery = async (query: string) => {
     setIsLoading(true);
@@ -73,7 +73,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-[#9b87f5] py-12 px-4" dir={language === 'he' ? "rtl" : "ltr"}>
       <div className="max-w-7xl mx-auto space-y-8">
-        <Header language={language} />
+        <Header language={language} toggleLanguage={toggleLanguage} />
         
         {!selectedCompetition ? (
           <div className="space-y-6">
