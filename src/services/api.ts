@@ -9,7 +9,7 @@ export const fetchFootballData = async (endpoint: string, params?: Record<string
   try {
     console.log('Fetching football data for endpoint:', endpoint, 'with params:', params);
     
-    const { data, error } = await supabase.functions.invoke('api-football', {
+    const { data, error } = await supabase.functions.invoke('football-api', {
       body: { endpoint, params },
     });
 
