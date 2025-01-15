@@ -1,10 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const FOOTBALL_API_BASE_URL = 'https://api.football-data.org/v4'
+const API_FOOTBALL_BASE_URL = 'https://v3.football.api-football.com'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Max-Age': '86400',
 }
@@ -36,14 +35,14 @@ serve(async (req) => {
       throw new Error('No endpoint provided');
     }
 
-    const apiKey = Deno.env.get('FOOTBALL_API_KEY');
+    const apiKey = Deno.env.get('API_FOOTBALL_KEY');
     if (!apiKey) {
-      console.error('Football API key not configured');
-      throw new Error('Football API key not configured');
+      console.error('API Football key not configured');
+      throw new Error('API Football key not configured');
     }
 
     // Build URL with query parameters
-    const url = new URL(`${FOOTBALL_API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`);
+    const url = new URL(`${API_FOOTBALL_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`);
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value) url.searchParams.append(key, value.toString());
@@ -54,20 +53,21 @@ serve(async (req) => {
 
     const response = await fetch(url.toString(), {
       headers: {
-        'X-Auth-Token': apiKey,
+        'x-rapidapi-key': apiKey,
+        'x-rapidapi-host': 'v3.football.api-football.com'
       },
     });
 
-    console.log('Football API response status:', response.status);
+    console.log('API Football response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Football API error response:', errorText);
-      throw new Error(`Football API Error: ${response.status} - ${errorText}`);
+      console.error('API Football error response:', errorText);
+      throw new Error(`API Football Error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('Successfully received data from Football API');
+    console.log('Successfully received data from API Football');
 
     return new Response(JSON.stringify({ data }), {
       headers: {
