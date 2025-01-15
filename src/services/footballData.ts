@@ -17,7 +17,7 @@ export const getFootballData = async (queryParams: {
         const standingsResponse = await fetchFootballData(
           '/standings',
           { 
-            league: queryParams.league || 'PL',
+            league: queryParams.league || '39',
             season: queryParams.season || SEASON
           }
         );
@@ -27,7 +27,7 @@ export const getFootballData = async (queryParams: {
         const scorersResponse = await fetchFootballData(
           '/players/topscorers',
           { 
-            league: queryParams.league || 'PL',
+            league: queryParams.league || '39',
             season: queryParams.season || SEASON
           }
         );
@@ -47,7 +47,7 @@ export const getFootballData = async (queryParams: {
         const matchesResponse = await fetchFootballData(
           '/fixtures',
           { 
-            league: queryParams.league || 'PL',
+            league: queryParams.league || '39',
             season: queryParams.season || SEASON,
             last: '10'
           }

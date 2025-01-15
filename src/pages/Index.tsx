@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const competitions = [
-  { id: 'PL', name: 'Premier League', country: 'England' },
-  { id: 'PD', name: 'La Liga', country: 'Spain' },
-  { id: 'BL1', name: 'Bundesliga', country: 'Germany' },
-  { id: 'SA', name: 'Serie A', country: 'Italy' },
-  { id: 'FL1', name: 'Ligue 1', country: 'France' },
+  { id: '39', name: 'Premier League', country: 'England' },
+  { id: '140', name: 'La Liga', country: 'Spain' },
+  { id: '78', name: 'Bundesliga', country: 'Germany' },
+  { id: '135', name: 'Serie A', country: 'Italy' },
+  { id: '61', name: 'Ligue 1', country: 'France' },
 ];
 
 const Index = () => {
