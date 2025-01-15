@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const API_FOOTBALL_BASE_URL = 'https://v3.football.api-football.com'
+const API_FOOTBALL_BASE_URL = 'https://api-football-v1.p.rapidapi.com/v3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,8 +52,8 @@ serve(async (req) => {
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {
-        'x-rapidapi-key': apiKey,
-        'x-rapidapi-host': 'v3.football.api-football.com'
+        'X-RapidAPI-Key': apiKey,
+        'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
       },
     });
 
