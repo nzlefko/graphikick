@@ -4,6 +4,7 @@ const API_FOOTBALL_BASE_URL = 'https://v3.football.api-football.com'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Max-Age': '86400',
 }
@@ -15,10 +16,7 @@ serve(async (req) => {
       console.log('Handling CORS preflight request');
       return new Response(null, {
         status: 204,
-        headers: {
-          ...corsHeaders,
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        }
+        headers: corsHeaders,
       });
     }
 
@@ -52,6 +50,7 @@ serve(async (req) => {
     console.log('Making request to:', url.toString());
 
     const response = await fetch(url.toString(), {
+      method: 'GET',
       headers: {
         'x-rapidapi-key': apiKey,
         'x-rapidapi-host': 'v3.football.api-football.com'
@@ -83,7 +82,6 @@ serve(async (req) => {
       JSON.stringify({
         error: error.message,
         details: error instanceof Error ? error.stack : undefined,
-        endpoint: req.body ? JSON.parse(await req.text()).endpoint : undefined,
       }),
       {
         status: 500,
