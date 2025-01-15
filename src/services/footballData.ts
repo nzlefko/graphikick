@@ -21,7 +21,22 @@ export const getFootballData = async (queryParams: {
             season: queryParams.season || SEASON
           }
         );
-        return standingsResponse.data?.response?.[0]?.league?.standings?.[0] || [];
+        // Transform the nested standings data structure
+        const standings = standingsResponse.data?.response?.[0]?.league?.standings?.[0] || [];
+        return standings.map((standing: any) => ({
+          position: standing.rank,
+          team: {
+            id: standing.team.id,
+            name: standing.team.name
+          },
+          playedGames: standing.all.played,
+          won: standing.all.win,
+          draw: standing.all.draw,
+          lost: standing.all.lose,
+          points: standing.points,
+          goalsFor: standing.all.goals.for,
+          goalsAgainst: standing.all.goals.against
+        }));
         
       case "scorers":
         const scorersResponse = await fetchFootballData(
