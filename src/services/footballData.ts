@@ -49,7 +49,9 @@ export const getFootballData = async (queryParams: {
           { 
             league: queryParams.league || '39',
             season: queryParams.season || SEASON,
-            last: '10'
+            status: 'FT',  // Only get finished matches
+            from: '2024-01-01',  // Get matches from start of 2024
+            to: '2024-12-31'     // Until end of 2024
           }
         );
         return matchesResponse.data?.response?.map((match: any) => ({
