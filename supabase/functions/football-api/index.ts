@@ -40,7 +40,7 @@ serve(async (req) => {
     }
 
     // Build URL with query parameters
-    const url = new URL(`${API_FOOTBALL_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`);
+    const url = new URL(`${API_FOOTBALL_BASE_URL}${endpoint}`);
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value) url.searchParams.append(key, value.toString());
