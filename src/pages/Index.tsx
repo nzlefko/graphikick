@@ -16,6 +16,7 @@ const competitions = [
   { id: '78', name: 'Bundesliga', country: 'Germany' },
   { id: '135', name: 'Serie A', country: 'Italy' },
   { id: '61', name: 'Ligue 1', country: 'France' },
+  { id: '383', name: 'Ligat ha\'Al', country: 'Israel' },
 ];
 
 const Index = () => {
