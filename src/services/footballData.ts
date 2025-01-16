@@ -2,6 +2,24 @@ import { processQuery } from '@/utils/nlpProcessor';
 import { fetchFootballData } from './api';
 
 const SEASON = '2023';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const dataCache: { [key: string]: { data: any; timestamp: number } } = {};
+
+const getCachedData = (cacheKey: string) => {
+  const cached = dataCache[cacheKey];
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log('Using cached data for:', cacheKey);
+    return cached.data;
+  }
+  return null;
+};
+
+const setCachedData = (cacheKey: string, data: any) => {
+  dataCache[cacheKey] = {
+    data,
+    timestamp: Date.now()
+  };
+};
 
 export const getFootballData = async (queryParams: { 
   type: string; 
@@ -11,6 +29,13 @@ export const getFootballData = async (queryParams: {
 }) => {
   try {
     console.log('Getting football data with params:', queryParams);
+    const cacheKey = `${queryParams.type}-${queryParams.league}-${queryParams.season}`;
+    
+    // Check cache first
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
     
     switch (queryParams.type) {
       case "standings":
@@ -22,10 +47,13 @@ export const getFootballData = async (queryParams: {
           }
         );
         console.log('Raw standings response:', standingsResponse.data);
-        const standings = standingsResponse.data?.response?.[0]?.league?.standings?.[0] || [];
-        console.log('Extracted standings:', standings);
+        const standings = standingsResponse.data?.response?.[0]?.league?.standings?.[0];
         
-        return standings.map((standing: any) => ({
+        if (!standings) {
+          throw new Error(`No standings found for ${queryParams.season || SEASON} season. Try a different season or league.`);
+        }
+        
+        const transformedStandings = standings.map((standing: any) => ({
           position: standing.rank,
           team: {
             id: standing.team.id,
@@ -40,6 +68,9 @@ export const getFootballData = async (queryParams: {
           goalsAgainst: standing.all.goals.against
         }));
         
+        setCachedData(cacheKey, transformedStandings);
+        return transformedStandings;
+        
       case "scorers":
         const scorersResponse = await fetchFootballData(
           '/players/topscorers',
@@ -48,7 +79,12 @@ export const getFootballData = async (queryParams: {
             season: queryParams.season || SEASON
           }
         );
-        return scorersResponse.data?.response?.map((item: any) => ({
+        
+        if (!scorersResponse.data?.response?.length) {
+          throw new Error(`No top scorers data found for ${queryParams.season || SEASON} season. Try a different season or league.`);
+        }
+        
+        const transformedScorers = scorersResponse.data.response.map((item: any) => ({
           player: {
             id: item.player.id,
             name: item.player.name
@@ -58,20 +94,29 @@ export const getFootballData = async (queryParams: {
             name: item.statistics[0].team.name
           },
           goals: item.statistics[0].goals.total
-        })) || [];
+        }));
+        
+        setCachedData(cacheKey, transformedScorers);
+        return transformedScorers;
         
       case "matches":
+        const currentYear = new Date().getFullYear();
         const matchesResponse = await fetchFootballData(
           '/fixtures',
           { 
             league: queryParams.league || '39',
             season: queryParams.season || SEASON,
-            status: 'FT',  // Only get finished matches
-            from: '2024-01-01',  // Get matches from start of 2024
-            to: '2024-12-31'     // Until end of 2024
+            status: 'FT',
+            from: `${currentYear}-01-01`,
+            to: `${currentYear}-12-31`
           }
         );
-        return matchesResponse.data?.response?.map((match: any) => ({
+        
+        if (!matchesResponse.data?.response?.length) {
+          throw new Error(`No matches found for the specified period. Try a different timeframe or league.`);
+        }
+        
+        const transformedMatches = matchesResponse.data.response.map((match: any) => ({
           id: match.fixture.id,
           utcDate: match.fixture.date,
           homeTeam: {
@@ -86,26 +131,33 @@ export const getFootballData = async (queryParams: {
               away: match.goals.away
             }
           }
-        })) || [];
+        }));
+        
+        setCachedData(cacheKey, transformedMatches);
+        return transformedMatches;
         
       case "team":
+        if (!queryParams.team) {
+          throw new Error("Team ID is required for team information queries.");
+        }
+        
         const teamResponse = await fetchFootballData(
           '/teams',
-          { 
-            id: queryParams.team
-          }
+          { id: queryParams.team }
         );
-        const teamData = teamResponse.data?.response?.[0];
-        if (!teamData) return null;
         
-        // Get team squad
+        if (!teamResponse.data?.response?.[0]) {
+          throw new Error(`Team information not found. Please check the team ID and try again.`);
+        }
+        
+        const teamData = teamResponse.data.response[0];
         const squadResponse = await fetchFootballData(
           '/players/squads',
           { team: queryParams.team }
         );
-        const squad = squadResponse.data?.response?.[0]?.players || [];
         
-        return {
+        const squad = squadResponse.data?.response?.[0]?.players || [];
+        const transformedTeam = {
           id: teamData.team.id,
           name: teamData.team.name,
           venue: teamData.venue.name,
@@ -118,20 +170,29 @@ export const getFootballData = async (queryParams: {
           }))
         };
         
+        setCachedData(cacheKey, transformedTeam);
+        return transformedTeam;
+        
       case "competitions":
-        const competitionsResponse = await fetchFootballData(
-          '/leagues'
-        );
-        return competitionsResponse.data?.response?.map((comp: any) => ({
+        const competitionsResponse = await fetchFootballData('/leagues');
+        
+        if (!competitionsResponse.data?.response?.length) {
+          throw new Error("Unable to fetch competitions list. Please try again later.");
+        }
+        
+        const transformedCompetitions = competitionsResponse.data.response.map((comp: any) => ({
           id: comp.league.id,
           name: comp.league.name,
           area: {
             name: comp.country.name
           }
-        })) || [];
+        }));
+        
+        setCachedData(cacheKey, transformedCompetitions);
+        return transformedCompetitions;
         
       default:
-        throw new Error("Invalid query type");
+        throw new Error("Invalid query type. Please try asking about standings, top scorers, matches, teams, or competitions.");
     }
   } catch (error) {
     console.error('Error in getFootballData:', error);

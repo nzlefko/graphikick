@@ -8,25 +8,18 @@ export const processQuery = async (query: string) => {
 
   // Initialize parameters with defaults
   let type = 'unknown';
-  let league = 'PL'; // Default to Premier League
-  let season = new Date().getFullYear().toString(); // Default to current year
+  let league = 'PL';
+  let season = new Date().getFullYear().toString();
   let team = undefined;
 
-  // Extract year/season
-  const yearMatch = cleanQuery.match(/\b20\d{2}\b/);
-  if (yearMatch) {
-    season = yearMatch[0];
-  } else if (cleanQuery.includes('last season')) {
-    season = (parseInt(season) - 1).toString();
-  }
-
-  // Enhanced league detection
+  // Enhanced league detection with synonyms and variations
   const leaguePatterns = {
-    'PD': ['la liga', 'spanish league', 'spain'],
-    'BL1': ['bundesliga', 'german league', 'germany'],
-    'SA': ['serie a', 'italian league', 'italy'],
-    'FL1': ['ligue 1', 'french league', 'france'],
-    'PL': ['premier league', 'english league', 'england']
+    'PD': ['la liga', 'spanish league', 'spain', 'primera division', 'laliga'],
+    'BL1': ['bundesliga', 'german league', 'germany', 'deutsche liga'],
+    'SA': ['serie a', 'italian league', 'italy', 'calcio'],
+    'FL1': ['ligue 1', 'french league', 'france', 'ligue1'],
+    'PL': ['premier league', 'english league', 'england', 'epl'],
+    '383': ['ligat haal', 'israeli league', 'israel', 'ligat ha\'al', 'israeli premier league']
   };
 
   for (const [code, patterns] of Object.entries(leaguePatterns)) {
@@ -36,31 +29,36 @@ export const processQuery = async (query: string) => {
     }
   }
 
-  // Enhanced query type detection with more patterns
+  // Enhanced query type detection with football-specific terminology
   const queryPatterns = {
     standings: [
       'standing', 'table', 'position', 'rank', 'league table',
       'who is leading', 'who leads', 'top of', 'bottom of',
-      'relegated', 'promotion', 'points', 'מיקום', 'טבלה'
+      'relegated', 'promotion', 'points', 'מיקום', 'טבלה',
+      'league position', 'current standings', 'team rankings'
     ],
     scorers: [
       'top scorer', 'goal scorer', 'most goals', 'leading scorer',
       'who scored', 'best striker', 'golden boot', 'מלך שערים',
-      'כובש', 'שערים'
+      'כובש', 'שערים', 'top goalscorer', 'scoring charts',
+      'goal tally', 'scoring leader', 'goal king'
     ],
     matches: [
       'match', 'game', 'fixture', 'score', 'result', 'played',
       'when', 'next game', 'last game', 'upcoming', 'schedule',
-      'משחק', 'תוצאה', 'מתי'
+      'משחק', 'תוצאה', 'מתי', 'head to head', 'h2h',
+      'matchday', 'gameweek', 'round', 'fixture list'
     ],
     team: [
       'team info', 'squad', 'roster', 'players', 'club',
       'who plays for', 'team sheet', 'lineup', 'formation',
-      'סגל', 'שחקנים', 'הרכב'
+      'סגל', 'שחקנים', 'הרכב', 'team news', 'club info',
+      'first team', 'starting eleven', 'bench', 'reserves'
     ],
     competitions: [
       'league', 'competition', 'tournament', 'championships',
-      'available leagues', 'which leagues', 'ליגות', 'תחרויות'
+      'available leagues', 'which leagues', 'ליגות', 'תחרויות',
+      'divisions', 'cups', 'competitions list'
     ]
   };
 
@@ -74,25 +72,23 @@ export const processQuery = async (query: string) => {
     }
   }
 
-  // Extract team names (basic implementation - can be expanded)
-  const commonTeams = {
-    'manchester united': 'MUFC',
-    'manchester city': 'MCFC',
-    'liverpool': 'LIV',
-    'chelsea': 'CHE',
-    'arsenal': 'ARS',
-    'tottenham': 'TOT',
-    'barcelona': 'BAR',
-    'real madrid': 'RMA',
-    'bayern munich': 'BAY',
-    'paris saint-germain': 'PSG',
-    'juventus': 'JUV',
-    'milan': 'MIL'
-  };
+  // Extract year/season with support for various formats
+  const yearPatterns = [
+    /\b20\d{2}\b/, // Full year (e.g., 2023)
+    /\b\d{2}\/\d{2}\b/, // Season format (e.g., 22/23)
+    /\b\d{2}-\d{2}\b/ // Alternative season format (e.g., 22-23)
+  ];
 
-  for (const [teamName, teamCode] of Object.entries(commonTeams)) {
-    if (cleanQuery.includes(teamName)) {
-      team = teamCode;
+  for (const pattern of yearPatterns) {
+    const match = cleanQuery.match(pattern);
+    if (match) {
+      if (match[0].includes('/') || match[0].includes('-')) {
+        // Convert season format to full year
+        const years = match[0].split(/[/-]/);
+        season = `20${years[0]}`;
+      } else {
+        season = match[0];
+      }
       break;
     }
   }
@@ -107,7 +103,14 @@ export const processQuery = async (query: string) => {
   console.info("Query processed:", { type, league, season, team });
 
   if (type === 'unknown') {
-    throw new Error('Could not understand the query. Please try asking about standings, top scorers, matches, teams, or competitions.');
+    throw new Error(
+      'Could not understand the query. Try asking about:\n' +
+      '- League standings or table\n' +
+      '- Top scorers or goal statistics\n' +
+      '- Match results or fixtures\n' +
+      '- Team information or squad details\n' +
+      '- Available competitions'
+    );
   }
 
   return {
