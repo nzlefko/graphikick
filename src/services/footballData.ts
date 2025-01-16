@@ -1,7 +1,7 @@
 import { processQuery } from '@/utils/nlpProcessor';
 import { fetchFootballData } from './api';
 
-const SEASON = '2023';
+const CURRENT_SEASON = '2023';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const dataCache: { [key: string]: { data: any; timestamp: number } } = {};
 
@@ -21,6 +21,15 @@ const setCachedData = (cacheKey: string, data: any) => {
   };
 };
 
+const validateSeason = (season: string): string => {
+  const seasonNumber = parseInt(season);
+  // API only allows seasons from 2021 to 2023 in free plan
+  if (seasonNumber < 2021 || seasonNumber > 2023) {
+    throw new Error('Season must be between 2021 and 2023. Please try a different season.');
+  }
+  return season;
+};
+
 export const getFootballData = async (queryParams: { 
   type: string; 
   league?: string; 
@@ -29,7 +38,8 @@ export const getFootballData = async (queryParams: {
 }) => {
   try {
     console.log('Getting football data with params:', queryParams);
-    const cacheKey = `${queryParams.type}-${queryParams.league}-${queryParams.season}`;
+    const season = validateSeason(queryParams.season || CURRENT_SEASON);
+    const cacheKey = `${queryParams.type}-${queryParams.league}-${season}`;
     
     // Check cache first
     const cachedData = getCachedData(cacheKey);
@@ -43,14 +53,13 @@ export const getFootballData = async (queryParams: {
           '/standings',
           { 
             league: queryParams.league || '39',
-            season: queryParams.season || SEASON
+            season
           }
         );
-        console.log('Raw standings response:', standingsResponse.data);
         const standings = standingsResponse.data?.response?.[0]?.league?.standings?.[0];
         
         if (!standings) {
-          throw new Error(`No standings found for ${queryParams.season || SEASON} season. Try a different season or league.`);
+          throw new Error(`No standings found for ${season} season. Try a different season or league.`);
         }
         
         const transformedStandings = standings.map((standing: any) => ({
@@ -76,12 +85,12 @@ export const getFootballData = async (queryParams: {
           '/players/topscorers',
           { 
             league: queryParams.league || '39',
-            season: queryParams.season || SEASON
+            season
           }
         );
         
         if (!scorersResponse.data?.response?.length) {
-          throw new Error(`No top scorers data found for ${queryParams.season || SEASON} season. Try a different season or league.`);
+          throw new Error(`No top scorers data found for ${season} season. Try a different season or league.`);
         }
         
         const transformedScorers = scorersResponse.data.response.map((item: any) => ({
@@ -100,20 +109,21 @@ export const getFootballData = async (queryParams: {
         return transformedScorers;
         
       case "matches":
-        const currentYear = new Date().getFullYear();
+        // Use the season year for the date range instead of current year
+        const seasonYear = season;
         const matchesResponse = await fetchFootballData(
           '/fixtures',
           { 
             league: queryParams.league || '39',
-            season: queryParams.season || SEASON,
+            season,
             status: 'FT',
-            from: `${currentYear}-01-01`,
-            to: `${currentYear}-12-31`
+            from: `${seasonYear}-01-01`,
+            to: `${seasonYear}-12-31`
           }
         );
         
         if (!matchesResponse.data?.response?.length) {
-          throw new Error(`No matches found for the specified period. Try a different timeframe or league.`);
+          throw new Error(`No matches found for season ${season}. Try a different season or league.`);
         }
         
         const transformedMatches = matchesResponse.data.response.map((match: any) => ({
