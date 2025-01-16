@@ -21,8 +21,10 @@ export const getFootballData = async (queryParams: {
             season: queryParams.season || SEASON
           }
         );
-        // Transform the nested standings data structure
+        console.log('Raw standings response:', standingsResponse.data);
         const standings = standingsResponse.data?.response?.[0]?.league?.standings?.[0] || [];
+        console.log('Extracted standings:', standings);
+        
         return standings.map((standing: any) => ({
           position: standing.rank,
           team: {
