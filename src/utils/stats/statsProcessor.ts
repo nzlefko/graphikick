@@ -24,6 +24,5 @@ export const processTeamStats = (matches: Match[], metric: string): TeamStats =>
   return {
     winPercentage: calculateWinPercentage(matches),
     totalMatches: matches.length,
-    // Add more metrics as needed
   };
 };

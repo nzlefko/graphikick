@@ -66,3 +66,8 @@ export interface Competition {
     name: string;
   };
 }
+
+export interface TeamStats {
+  winPercentage: number;
+  totalMatches: number;
+}
