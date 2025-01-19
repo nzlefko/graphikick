@@ -1,68 +1,49 @@
-import { tokenizer, classifier } from './nlpSetup';
-import { QueryIntent, ProcessedQuery } from '@/types/query';
 import { logger } from '../logger';
+import { parseQuery } from './queryParser';
+import { extractEntities } from './nlpSetup';
+import { QueryType } from './patterns';
 
-interface ExtractedEntities {
-  teams?: string[];
-  formations?: string[];
-  metrics?: string[];
-  timeframe?: string;
+interface ProcessedQuery {
+  type: QueryType;
+  league: string;
+  season: string;
+  team?: string;
+  filters?: {
+    formation?: string;
+    metric?: string;
+  };
 }
 
-const FORMATIONS = ['4-3-3', '4-4-2', '3-5-2', '3-4-3', '4-2-3-1'];
-const METRICS = ['win percentage', 'goals', 'clean sheets', 'possession'];
-
-export const extractEntities = (query: string): ExtractedEntities => {
-  const tokens = tokenizer.tokenize(query.toLowerCase());
-  const entities: ExtractedEntities = {};
-
-  // Extract formations using pattern matching
-  entities.formations = FORMATIONS.filter(formation => 
-    query.toLowerCase().includes(formation.toLowerCase())
-  );
-
-  // Extract metrics
-  entities.metrics = METRICS.filter(metric => 
-    query.toLowerCase().includes(metric.toLowerCase())
-  );
-
-  // Extract teams (simplified - would need a comprehensive team database)
-  const teamMatches = query.match(/\b[A-Z][a-z]+ ?(?:[A-Z][a-z]+)?\b/g);
-  if (teamMatches) {
-    entities.teams = teamMatches;
+export const processQuery = async (query: string, language: 'he' | 'en' = 'en'): Promise<ProcessedQuery> => {
+  if (!query || typeof query !== 'string') {
+    throw new Error('Invalid query: Query must be a non-empty string');
   }
 
-  logger.debug('Extracted entities:', entities);
-  return entities;
-};
+  const cleanQuery = query.trim().toLowerCase();
+  logger.info('Processing query', { cleanQuery, language });
 
-export const processComplexQuery = async (query: string): Promise<ProcessedQuery> => {
-  const entities = extractEntities(query);
-  
-  if (!entities.teams?.length && !entities.formations?.length && !entities.metrics?.length) {
-    throw new Error('Could not identify any specific teams, formations, or metrics in your query. Try being more specific, for example: "What\'s Arsenal\'s win percentage with 4-3-3?"');
+  try {
+    // Use both regex-based parsing and entity extraction
+    const parsedQuery = parseQuery(cleanQuery, language);
+    const entities = extractEntities(cleanQuery);
+
+    // Combine results
+    const result: ProcessedQuery = {
+      type: entities.type as QueryType || parsedQuery.type,
+      league: parsedQuery.league || 'PL', // Default to Premier League
+      season: parsedQuery.season || new Date().getFullYear().toString(),
+      team: entities.team,
+      filters: {
+        formation: entities.formation,
+        metric: entities.metric
+      }
+    };
+
+    logger.info('Query processed successfully', result);
+    return result;
+
+  } catch (error) {
+    logger.error('Error processing query', { query, language, error });
+    throw error;
   }
-
-  const result: ProcessedQuery = {
-    type: determineQueryType(entities),
-    filters: {
-      team: entities.teams?.[0],
-      formation: entities.formations?.[0],
-      metric: entities.metrics?.[0],
-    },
-    season: new Date().getFullYear().toString()
-  };
-
-  logger.info('Processed complex query:', result);
-  return result;
-};
-
-const determineQueryType = (entities: ExtractedEntities): string => {
-  if (entities.metrics?.includes('win percentage')) {
-    return 'team-stats';
-  }
-  if (entities.formations?.length) {
-    return 'formation-analysis';
-  }
-  return 'team';
 };
