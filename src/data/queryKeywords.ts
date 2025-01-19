@@ -36,8 +36,6 @@ export const seasonPatterns = {
   fullYear: /\b20\d{2}\b/,
   shortYear: /\b\d{2}\/\d{2}\b/,
   hyphenated: /\b\d{2}-\d{2}\b/,
-  relative: {
-    thisSeason: /(this|current)\s+season/i,
-    lastSeason: /last\s+season/i
-  }
+  thisSeasonPattern: /(this|current)\s+season/i,
+  lastSeasonPattern: /last\s+season/i
 };

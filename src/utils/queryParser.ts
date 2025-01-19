@@ -20,32 +20,35 @@ const extractSeason = (query: string): string => {
   const cleanQuery = query.toLowerCase();
 
   // Handle relative season terms
-  if (seasonPatterns.relative.thisSeason.test(cleanQuery)) {
+  if (seasonPatterns.thisSeasonPattern.test(cleanQuery)) {
     return currentSeason;
   }
-  if (seasonPatterns.relative.lastSeason.test(cleanQuery)) {
+  if (seasonPatterns.lastSeasonPattern.test(cleanQuery)) {
     return (parseInt(currentSeason) - 1).toString();
   }
 
   // Check for explicit season patterns
   for (const [key, pattern] of Object.entries(seasonPatterns)) {
-    if (key !== 'relative') {
-      const match = cleanQuery.match(pattern);
-      if (match) {
-        let year = match[0];
-        if (year.includes('/') || year.includes('-')) {
-          const [startYear] = year.split(/[/-]/);
-          year = `20${startYear}`;
-        }
-        
-        // Validate season range (2021-2023 for free API plan)
-        const seasonYear = parseInt(year);
-        if (seasonYear < 2021 || seasonYear > 2023) {
-          throw new Error(`Season ${year} is not supported. Please try a season between 2021 and 2023. Query: "${query}"`);
-        }
-        
-        return year;
+    // Skip the relative patterns as they're handled above
+    if (key === 'thisSeasonPattern' || key === 'lastSeasonPattern') {
+      continue;
+    }
+    
+    const match = cleanQuery.match(pattern as RegExp);
+    if (match) {
+      let year = match[0];
+      if (year.includes('/') || year.includes('-')) {
+        const [startYear] = year.split(/[/-]/);
+        year = `20${startYear}`;
       }
+      
+      // Validate season range (2021-2023 for free API plan)
+      const seasonYear = parseInt(year);
+      if (seasonYear < 2021 || seasonYear > 2023) {
+        throw new Error(`Season ${year} is not supported. Please try a season between 2021 and 2023. Query: "${query}"`);
+      }
+      
+      return year;
     }
   }
 
