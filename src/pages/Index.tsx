@@ -9,6 +9,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { formatTextResponse } from "@/utils/formatResponse";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Team, TeamStanding, TopScorer, Match, Competition } from "@/types/football";
+
+type FootballData = Array<Team | TeamStanding | TopScorer | Match | Competition>;
 
 const competitions = [
   { id: '39', name: 'Premier League', country: 'England' },
@@ -21,7 +24,7 @@ const competitions = [
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<any[] | null>(null);
+  const [data, setData] = useState<FootballData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
   const [textResponse, setTextResponse] = useState<string>("");
@@ -42,7 +45,7 @@ const Index = () => {
       const results = await getFootballData(queryParams);
       
       if (results) {
-        setData(results);
+        setData(results as FootballData);
         const formattedResponse = formatTextResponse(results, queryParams.type, language);
         setTextResponse(formattedResponse);
       } else {
