@@ -1,7 +1,6 @@
 import { processQuery } from '@/utils/nlp/processor';
 import { fetchFootballData } from './api';
 import { processTeamStats } from '@/utils/stats/statsProcessor';
-import { processComplexQuery } from '@/utils/nlp/queryProcessor';
 import { logger } from '@/utils/logger';
 
 const CURRENT_SEASON = '2023';
@@ -253,6 +252,7 @@ export const getFootballData = async (queryParams: {
       default:
         throw new Error("Invalid query type. Please try asking about team statistics, formations, or matches.");
     }
+
   } catch (error) {
     logger.error('Error in getFootballData:', error);
     throw error;
@@ -260,10 +260,11 @@ export const getFootballData = async (queryParams: {
 };
 
 export const handleComplexQuery = async (query: string) => {
-  const processedQuery = await processComplexQuery(query);
+  const processedQuery = await processQuery(query, 'en');
   return getFootballData({
     type: processedQuery.type,
-    team: processedQuery.filters?.team,
+    league: processedQuery.league,
+    team: processedQuery.team,
     season: processedQuery.season,
     filters: {
       formation: processedQuery.filters?.formation,
