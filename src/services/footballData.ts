@@ -1,5 +1,8 @@
-import { processQuery } from '@/utils/nlpProcessor';
+import { processQuery } from '@/utils/nlp/processor';
 import { fetchFootballData } from './api';
+import { processTeamStats } from '@/utils/stats/statsProcessor';
+import { processComplexQuery } from '@/utils/nlp/queryProcessor';
+import { logger } from '@/utils/logger';
 
 const CURRENT_SEASON = '2023';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -35,20 +38,62 @@ export const getFootballData = async (queryParams: {
   league?: string; 
   season?: string;
   team?: string;
+  filters?: {
+    formation?: string;
+    metric?: string;
+  };
 }) => {
   try {
-    console.log('Getting football data with params:', queryParams);
+    logger.info('Getting football data with params:', queryParams);
     const season = validateSeason(queryParams.season || CURRENT_SEASON);
-    const cacheKey = `${queryParams.type}-${queryParams.league}-${season}`;
+    const cacheKey = `${queryParams.type}-${queryParams.league}-${season}-${queryParams.team}-${JSON.stringify(queryParams.filters)}`;
     
     // Check cache first
     const cachedData = getCachedData(cacheKey);
     if (cachedData) {
       return cachedData;
     }
-    
+
     switch (queryParams.type) {
-      case "standings":
+      case "team-stats": {
+        // Fetch team matches
+        const matchesResponse = await fetchFootballData(
+          '/fixtures',
+          { 
+            team: queryParams.team,
+            season,
+            status: 'FT'
+          }
+        );
+
+        if (!matchesResponse.data?.response?.length) {
+          throw new Error(`No matches found for the team in ${season} season.`);
+        }
+
+        const matches = matchesResponse.data.response.map((match: any) => ({
+          id: match.fixture.id,
+          utcDate: match.fixture.date,
+          homeTeam: {
+            name: match.teams.home.name
+          },
+          awayTeam: {
+            name: match.teams.away.name
+          },
+          score: {
+            fullTime: {
+              home: match.goals.home,
+              away: match.goals.away
+            }
+          }
+        }));
+
+        // Process stats based on metric
+        const stats = processTeamStats(matches, queryParams.filters?.metric || 'win percentage');
+        setCachedData(cacheKey, stats);
+        return stats;
+      }
+
+      case "standings": {
         const standingsResponse = await fetchFootballData(
           '/standings',
           { 
@@ -79,8 +124,9 @@ export const getFootballData = async (queryParams: {
         
         setCachedData(cacheKey, transformedStandings);
         return transformedStandings;
+      }
         
-      case "scorers":
+      case "scorers": {
         const scorersResponse = await fetchFootballData(
           '/players/topscorers',
           { 
@@ -107,9 +153,9 @@ export const getFootballData = async (queryParams: {
         
         setCachedData(cacheKey, transformedScorers);
         return transformedScorers;
+      }
         
-      case "matches":
-        // Use the season year for the date range instead of current year
+      case "matches": {
         const seasonYear = season;
         const matchesResponse = await fetchFootballData(
           '/fixtures',
@@ -145,8 +191,9 @@ export const getFootballData = async (queryParams: {
         
         setCachedData(cacheKey, transformedMatches);
         return transformedMatches;
+      }
         
-      case "team":
+      case "team": {
         if (!queryParams.team) {
           throw new Error("Team ID is required for team information queries.");
         }
@@ -182,8 +229,9 @@ export const getFootballData = async (queryParams: {
         
         setCachedData(cacheKey, transformedTeam);
         return transformedTeam;
+      }
         
-      case "competitions":
+      case "competitions": {
         const competitionsResponse = await fetchFootballData('/leagues');
         
         if (!competitionsResponse.data?.response?.length) {
@@ -200,14 +248,28 @@ export const getFootballData = async (queryParams: {
         
         setCachedData(cacheKey, transformedCompetitions);
         return transformedCompetitions;
-        
+      }
+      
       default:
-        throw new Error("Invalid query type. Please try asking about standings, top scorers, matches, teams, or competitions.");
+        throw new Error("Invalid query type. Please try asking about team statistics, formations, or matches.");
     }
   } catch (error) {
-    console.error('Error in getFootballData:', error);
+    logger.error('Error in getFootballData:', error);
     throw error;
   }
+};
+
+export const handleComplexQuery = async (query: string) => {
+  const processedQuery = await processComplexQuery(query);
+  return getFootballData({
+    type: processedQuery.type,
+    team: processedQuery.filters?.team,
+    season: processedQuery.season,
+    filters: {
+      formation: processedQuery.filters?.formation,
+      metric: processedQuery.filters?.metric
+    }
+  });
 };
 
 export { processQuery };
